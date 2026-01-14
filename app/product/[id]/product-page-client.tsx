@@ -1,0 +1,295 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { motion, AnimatePresence, LayoutGroup } from "framer-motion"
+import { Header } from "@/components/header"
+import { BottomNav } from "@/components/bottom-nav"
+import { ProductImageSlider } from "@/components/product-image-slider"
+import { TryOnBottomSheet } from "@/components/try-on-bottom-sheet"
+import { Button } from "@/components/ui/button"
+import { products } from "@/lib/products"
+import { useCart } from "@/hooks/use-cart"
+import { triggerHaptic, playSuccessSound } from "@/lib/haptics"
+import { toggleFavorite, isFavorite } from "@/lib/favorites"
+import { cn } from "@/lib/utils"
+import { Check, ShoppingBag, Heart, Share2 } from "lucide-react"
+
+interface ProductPageClientProps {
+  productId: string
+}
+
+export default function ProductPageClient({ productId }: ProductPageClientProps) {
+  const router = useRouter()
+  const product = products.find((p) => p.id === productId)
+  const { addToCart, itemCount } = useCart()
+  const [selectedSize, setSelectedSize] = useState<string | null>(null)
+  const [isAdding, setIsAdding] = useState(false)
+  const [showAdded, setShowAdded] = useState(false)
+  const [isTryOnOpen, setIsTryOnOpen] = useState(false)
+  const [isFav, setIsFav] = useState(false)
+
+  useEffect(() => {
+    if (product) {
+      setIsFav(isFavorite(product.id))
+    }
+    window.scrollTo(0, 0)
+  }, [product])
+
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Product not found</p>
+      </div>
+    )
+  }
+
+  const productImages = product.images && product.images.length > 0 ? product.images : [product.image]
+
+  const handleSizeSelect = (size: string) => {
+    triggerHaptic("light")
+    setSelectedSize(size)
+  }
+
+  const handleAddToCart = () => {
+    if (!selectedSize) return
+
+    setIsAdding(true)
+    triggerHaptic("medium")
+
+    addToCart(product, selectedSize)
+
+    setTimeout(() => {
+      setIsAdding(false)
+      setShowAdded(true)
+      triggerHaptic("success")
+      playSuccessSound()
+
+      setTimeout(() => {
+        router.push("/cart")
+      }, 800)
+    }, 400)
+  }
+
+  const handleTryOn = () => {
+    setIsTryOnOpen(true)
+  }
+
+  const handleShare = async () => {
+    triggerHaptic("light")
+
+    const shareData = {
+      title: product.name,
+      text: `Check out ${product.name} at Brova - EGP ${product.price.toLocaleString()}`,
+      url: window.location.href,
+    }
+
+    if (navigator.share && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData)
+        playSuccessSound()
+      } catch (err) {
+        // User cancelled or error
+      }
+    } else {
+      await navigator.clipboard.writeText(window.location.href)
+      triggerHaptic("success")
+      playSuccessSound()
+    }
+  }
+
+  const handleFavoriteToggle = () => {
+    triggerHaptic("medium")
+    const newState = toggleFavorite(product.id)
+    setIsFav(newState)
+    if (newState) {
+      playSuccessSound()
+    }
+  }
+
+  return (
+    <LayoutGroup>
+      <motion.div
+        className="min-h-screen bg-background pb-24"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="max-w-md mx-auto lg:max-w-6xl lg:grid lg:grid-cols-2 lg:gap-12">
+          <div className="relative">
+            <div className="lg:hidden">
+              <Header showBack />
+            </div>
+
+            <motion.div
+              layoutId={`product-image-${product.id}`}
+              className="relative w-full lg:sticky lg:top-0 lg:mt-8"
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            >
+              <ProductImageSlider images={productImages} productName={product.name} onTryOn={handleTryOn} />
+            </motion.div>
+          </div>
+
+          <div className="px-4 py-6 lg:py-8">
+            <div className="hidden lg:block mb-6">
+              <Header showBack />
+            </div>
+
+            <motion.div
+              className="flex items-center justify-between mb-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+            >
+              <p className="text-xs text-muted-foreground uppercase tracking-widest">{product.category}</p>
+              <div className="flex items-center gap-2">
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleShare}
+                  className="w-10 h-10 rounded-full bg-muted flex items-center justify-center"
+                  aria-label="Share product"
+                >
+                  <Share2 className="w-5 h-5" />
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleFavoriteToggle}
+                  className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+                    isFav ? "bg-red-500/20 text-red-500" : "bg-muted",
+                  )}
+                  aria-label={isFav ? "Remove from favorites" : "Add to favorites"}
+                >
+                  <Heart className={cn("w-5 h-5", isFav && "fill-current")} />
+                </motion.button>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              layoutId={`product-info-${product.id}`}
+            >
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold uppercase tracking-tight mb-3 text-balance">
+                {product.name}
+              </h1>
+              <p className="text-sm md:text-base text-muted-foreground leading-relaxed mb-6">{product.description}</p>
+            </motion.div>
+
+            <motion.div
+              className="mb-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <p className="text-sm font-semibold mb-3">Select Size</p>
+              <div className="flex gap-3 flex-wrap">
+                {product.sizes.map((size, index) => (
+                  <motion.button
+                    key={size}
+                    onClick={() => handleSizeSelect(size)}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3 + index * 0.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={cn(
+                      "w-14 h-14 rounded-xl border-2 font-semibold transition-all duration-200",
+                      selectedSize === size
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border bg-background text-foreground hover:border-foreground/50",
+                    )}
+                  >
+                    {size}
+                  </motion.button>
+                ))}
+              </div>
+              <AnimatePresence>
+                {!selectedSize && (
+                  <motion.p
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="text-xs text-muted-foreground mt-2"
+                  >
+                    Please select a size to continue
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </motion.div>
+
+            <motion.div
+              className="flex items-center gap-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <div className="flex-1">
+                <p className="text-3xl md:text-4xl font-bold">EGP {product.price.toLocaleString()}</p>
+              </div>
+
+              <motion.div className="flex-1" whileTap={{ scale: 0.98 }}>
+                <Button
+                  size="lg"
+                  className="w-full rounded-2xl h-16 text-base font-semibold relative overflow-hidden"
+                  disabled={!selectedSize || isAdding}
+                  onClick={handleAddToCart}
+                >
+                  <AnimatePresence mode="wait">
+                    {showAdded ? (
+                      <motion.span
+                        key="added"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="flex items-center gap-2"
+                      >
+                        <Check className="w-5 h-5" />
+                        Added!
+                      </motion.span>
+                    ) : isAdding ? (
+                      <motion.span
+                        key="adding"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="flex items-center gap-2"
+                      >
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 0.5, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                        >
+                          <ShoppingBag className="w-5 h-5" />
+                        </motion.div>
+                        Adding...
+                      </motion.span>
+                    ) : (
+                      <motion.span
+                        key="add"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                      >
+                        Add to Cart
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </Button>
+              </motion.div>
+            </motion.div>
+          </div>
+        </div>
+
+        <BottomNav cartCount={itemCount} />
+
+        <TryOnBottomSheet
+          isOpen={isTryOnOpen}
+          onClose={() => setIsTryOnOpen(false)}
+          productImage={productImages[0]}
+          productName={product.name}
+        />
+      </motion.div>
+    </LayoutGroup>
+  )
+}

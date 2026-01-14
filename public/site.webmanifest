@@ -1,0 +1,22 @@
+{
+  "name": "Brova",
+  "short_name": "Brova",
+  "description": "Egyptian Streetwear Fashion Store",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.jpg",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.jpg",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#1a1a1a",
+  "background_color": "#1a1a1a",
+  "display": "standalone",
+  "start_url": "/",
+  "scope": "/"
+}
