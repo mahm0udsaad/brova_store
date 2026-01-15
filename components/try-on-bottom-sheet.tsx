@@ -20,6 +20,7 @@ export function TryOnBottomSheet({ isOpen, onClose, productImage, productName }:
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [tryOnResult, setTryOnResult] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleClose = useCallback(() => {
@@ -30,12 +31,30 @@ export function TryOnBottomSheet({ isOpen, onClose, productImage, productName }:
       setUploadedImage(null)
       setTryOnResult(null)
       setIsProcessing(false)
+      setErrorMessage(null)
     }, 300)
   }, [onClose])
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
+      // Clear previous error
+      setErrorMessage(null)
+
+      // Validate file type
+      const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
+      if (!allowedTypes.includes(file.type)) {
+        setErrorMessage("Please upload a valid image (JPEG, PNG, or WebP)")
+        return
+      }
+
+      // Validate file size (5MB max)
+      const maxSize = 5 * 1024 * 1024
+      if (file.size > maxSize) {
+        setErrorMessage("Image size must be less than 5MB")
+        return
+      }
+
       triggerHaptic("light")
       const reader = new FileReader()
       reader.onload = (event) => {
@@ -55,15 +74,50 @@ export function TryOnBottomSheet({ isOpen, onClose, productImage, productName }:
 
     triggerHaptic("medium")
     setIsProcessing(true)
+    setErrorMessage(null)
 
-    // Simulate AI processing
-    await new Promise((resolve) => setTimeout(resolve, 2500))
+    try {
+      // Convert base64 data URL to File object
+      const response = await fetch(uploadedImage)
+      const blob = await response.blob()
+      const file = new File([blob], "user-photo.jpg", { type: blob.type })
 
-    // In a real app, this would call an AI API
-    setTryOnResult(productImage) // Placeholder - would be AI generated result
-    setIsProcessing(false)
-    triggerHaptic("success")
-    playSuccessSound()
+      // Prepare form data
+      const formData = new FormData()
+      formData.append("userImage", file)
+      formData.append("productImageUrl", productImage)
+
+      // Call the try-on API
+      const apiResponse = await fetch("/api/try-on", {
+        method: "POST",
+        body: formData,
+      })
+
+      const data = await apiResponse.json()
+
+      if (!apiResponse.ok) {
+        throw new Error(data.error || "Failed to generate try-on")
+      }
+
+      // Set the result image
+      setTryOnResult(data.resultImage)
+      triggerHaptic("success")
+      playSuccessSound()
+    } catch (error: any) {
+      console.error("Try-on error:", error)
+      triggerHaptic("heavy")
+      
+      // Set user-friendly error message
+      if (error.message.includes("Rate limit")) {
+        setErrorMessage("Too many requests. Please try again in a few moments.")
+      } else if (error.message.includes("Service")) {
+        setErrorMessage("Service temporarily unavailable. Please try again.")
+      } else {
+        setErrorMessage("Failed to generate try-on. Please try again.")
+      }
+    } finally {
+      setIsProcessing(false)
+    }
   }, [uploadedImage, productImage])
 
   const backdropVariants = {
@@ -76,7 +130,7 @@ export function TryOnBottomSheet({ isOpen, onClose, productImage, productName }:
     visible: {
       y: 0,
       transition: {
-        type: "spring",
+        type: "spring" as const,
         damping: 30,
         stiffness: 300,
       },
@@ -84,7 +138,7 @@ export function TryOnBottomSheet({ isOpen, onClose, productImage, productName }:
     exit: {
       y: "100%",
       transition: {
-        type: "spring",
+        type: "spring" as const,
         damping: 30,
         stiffness: 300,
       },
@@ -139,22 +193,31 @@ export function TryOnBottomSheet({ isOpen, onClose, productImage, productName }:
             </div>
 
             {/* Content */}
-            <div className="p-4 overflow-y-auto max-h-[calc(90vh-100px)]">
-              {/* Product Preview */}
-              <div className="mb-6">
-                <p className="text-sm text-muted-foreground mb-2">Trying on:</p>
-                <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-2xl">
-                  <div className="relative w-16 h-16 rounded-xl overflow-hidden">
-                    <Image src={productImage || "/placeholder.svg"} alt={productName} fill className="object-cover" />
+            <div className="p-4 h-[calc(90vh-5rem)] flex flex-col">
+              {/* Product Preview - Hide when showing result to save space */}
+              {!tryOnResult && (
+                <div className="mb-6 shrink-0">
+                  <p className="text-sm text-muted-foreground mb-2">Trying on:</p>
+                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-2xl">
+                    <div className="relative w-16 h-16 rounded-xl overflow-hidden">
+                      <Image src={productImage || "/placeholder.svg"} alt={productName} fill className="object-cover" />
+                    </div>
+                    <p className="font-semibold">{productName}</p>
                   </div>
-                  <p className="font-semibold">{productName}</p>
                 </div>
-              </div>
+              )}
+
+              {/* Error Message */}
+              {errorMessage && (
+                <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-xl shrink-0">
+                  <p className="text-sm text-destructive">{errorMessage}</p>
+                </div>
+              )}
 
               {/* Upload Section */}
               {!tryOnResult && (
-                <div className="space-y-4">
-                  <p className="text-sm font-semibold">Upload your photo</p>
+                <div className="space-y-4 flex-1 flex flex-col min-h-0">
+                  <p className="text-sm font-semibold shrink-0">Upload your photo</p>
 
                   <input
                     ref={fileInputRef}
@@ -167,7 +230,7 @@ export function TryOnBottomSheet({ isOpen, onClose, productImage, productName }:
 
                   {!uploadedImage ? (
                     <motion.div
-                      className="border-2 border-dashed border-border rounded-2xl p-8 flex flex-col items-center justify-center gap-4 bg-muted/30"
+                      className="border-2 border-dashed border-border rounded-2xl flex-1 flex flex-col items-center justify-center gap-4 bg-muted/30 min-h-[200px]"
                       whileTap={{ scale: 0.98 }}
                       onClick={handleUploadClick}
                     >
@@ -180,34 +243,80 @@ export function TryOnBottomSheet({ isOpen, onClose, productImage, productName }:
                       </div>
                     </motion.div>
                   ) : (
-                    <div className="space-y-4">
-                      <div className="relative aspect-[3/4] rounded-2xl overflow-hidden">
+                    <div className="space-y-4 flex-1 flex flex-col min-h-0">
+                      <div className="relative flex-1 w-full rounded-2xl overflow-hidden bg-black/5">
                         <Image
                           src={uploadedImage || "/placeholder.svg"}
                           alt="Your photo"
                           fill
-                          className="object-cover"
+                          className="object-contain"
                         />
-                        <motion.button
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => {
-                            triggerHaptic("light")
-                            setUploadedImage(null)
-                          }}
-                          className="absolute top-3 right-3 w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center"
-                        >
-                          <X className="w-5 h-5" />
-                        </motion.button>
+                        
+                        {/* Loading Overlay */}
+                        {isProcessing && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="absolute inset-0 z-20 bg-black/60 backdrop-blur-[2px] flex flex-col items-center justify-center"
+                          >
+                             {/* Scanner Line */}
+                            <motion.div
+                              className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent shadow-[0_0_15px_rgba(var(--primary),1)]"
+                              animate={{
+                                top: ["0%", "100%", "0%"],
+                              }}
+                              transition={{
+                                duration: 3,
+                                ease: "linear",
+                                repeat: Infinity,
+                              }}
+                            />
+                            
+                            {/* Animated Particles/Rings */}
+                            <div className="relative">
+                                <motion.div 
+                                    className="absolute inset-0 bg-primary/30 rounded-full blur-xl"
+                                    animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0.2, 0.5] }}
+                                    transition={{ duration: 2, repeat: Infinity }}
+                                />
+                                <div className="relative bg-background/10 backdrop-blur-md p-4 rounded-full border border-white/10">
+                                    <Sparkles className="w-8 h-8 text-primary animate-pulse" />
+                                </div>
+                            </div>
+                            
+                            <motion.p 
+                                className="text-white font-medium mt-6 text-lg tracking-wide"
+                                animate={{ opacity: [0.5, 1, 0.5] }}
+                                transition={{ duration: 1.5, repeat: Infinity }}
+                            >
+                                Generating Look...
+                            </motion.p>
+                          </motion.div>
+                        )}
+
+                        {!isProcessing && (
+                            <motion.button
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => {
+                                triggerHaptic("light")
+                                setUploadedImage(null)
+                            }}
+                            className="absolute top-3 right-3 w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center z-10"
+                            >
+                            <X className="w-5 h-5" />
+                            </motion.button>
+                        )}
                       </div>
                     </div>
                   )}
 
                   {/* Action Buttons */}
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 shrink-0 pt-2">
                     <Button
                       variant="outline"
                       className="flex-1 rounded-xl h-14 bg-transparent"
                       onClick={handleUploadClick}
+                      disabled={isProcessing}
                     >
                       <Upload className="w-4 h-4 mr-2" />
                       {uploadedImage ? "Change" : "Upload"}
@@ -218,10 +327,7 @@ export function TryOnBottomSheet({ isOpen, onClose, productImage, productName }:
                       onClick={handleTryOn}
                     >
                       {isProcessing ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Processing...
-                        </>
+                        "Processing..."
                       ) : (
                         <>
                           <Sparkles className="w-4 h-4 mr-2" />
@@ -235,20 +341,31 @@ export function TryOnBottomSheet({ isOpen, onClose, productImage, productName }:
 
               {/* Result Section */}
               {tryOnResult && (
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }} 
+                    animate={{ opacity: 1, scale: 1 }} 
+                    className="flex-1 flex flex-col min-h-0 space-y-4"
+                >
+                  <div className="flex items-center gap-2 text-sm font-semibold text-primary shrink-0">
                     <Sparkles className="w-4 h-4" />
                     AI Try-On Result
                   </div>
 
-                  <div className="relative aspect-[3/4] rounded-2xl overflow-hidden border-2 border-primary/20">
-                    <Image src={tryOnResult || "/placeholder.svg"} alt="Try-on result" fill className="object-cover" />
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4">
-                      <p className="text-white text-sm font-medium">Looking great!</p>
+                  <div className="relative flex-1 w-full rounded-2xl overflow-hidden border border-primary/20 bg-black/5 shadow-2xl">
+                    <Image src={tryOnResult || "/placeholder.svg"} alt="Try-on result" fill className="object-contain" />
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
+                      <motion.p 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="text-white text-lg font-bold text-center"
+                      >
+                        Looking great! ✨
+                      </motion.p>
                     </div>
                   </div>
 
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 shrink-0 pt-2">
                     <Button
                       variant="outline"
                       className="flex-1 rounded-xl h-14 bg-transparent"
@@ -269,9 +386,13 @@ export function TryOnBottomSheet({ isOpen, onClose, productImage, productName }:
               )}
 
               {/* Disclaimer */}
-              <p className="text-xs text-muted-foreground text-center mt-6">
-                AI-generated preview. Actual fit may vary.
-              </p>
+              {!tryOnResult && !isProcessing && (
+                  <div className="mt-4 shrink-0 space-y-2">
+                    <p className="text-xs text-muted-foreground text-center">
+                    AI-generated preview. Actual fit may vary.
+                    </p>
+                  </div>
+              )}
             </div>
           </motion.div>
         </div>
