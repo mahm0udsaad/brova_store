@@ -9,6 +9,7 @@ import { ModalStackProvider } from "@/components/modal-stack/modal-stack-context
 import { ModalStackContainer } from "@/components/modal-stack/modal-stack-container"
 import { PageScaleWrapper } from "@/components/modal-stack/page-scale-wrapper"
 import "./globals.css"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -144,6 +145,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <ModalStackProvider>
             <PageScaleWrapper>
+          <SpeedInsights />
               {children}
               <ThemeToggle />
             </PageScaleWrapper>
