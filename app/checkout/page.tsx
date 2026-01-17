@@ -32,6 +32,8 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const [addressError, setAddressError] = useState<string | null>(null)
+  const [forceExpandAddress, setForceExpandAddress] = useState(false)
 
   useEffect(() => {
     const savedProfile = getUserProfile()
@@ -43,12 +45,7 @@ export default function CheckoutPage() {
   }, [])
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated && cart.length > 0) {
-      const timer = setTimeout(() => {
-        setShowAuthModal(true)
-      }, 1500)
-      return () => clearTimeout(timer)
-    }
+    if (!authLoading && !isAuthenticated && cart.length > 0) setShowAuthModal(true)
   }, [authLoading, isAuthenticated, cart.length])
 
   useEffect(() => {
@@ -56,6 +53,12 @@ export default function CheckoutPage() {
       setPhoneNumber(user.phone.replace("+20", ""))
     }
   }, [user])
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+    const savedProfile = getUserProfile()
+    if (savedProfile?.fullName) setFullName(savedProfile.fullName)
+  }, [isAuthenticated])
 
   const isPhoneValid =
     isAuthenticated || (phoneNumber ? /^(\+20|0)?1[0125]\d{8}$/.test(phoneNumber.replace(/\s/g, "")) : false)
@@ -66,6 +69,15 @@ export default function CheckoutPage() {
     fullName.trim().length > 0 && isPhoneValid && isAddressValid && isAuthenticated && cart.length > 0
 
   const handlePlaceOrder = async () => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true)
+      return
+    }
+
+    const nextAddressError = !isAddressValid ? "Please enter your full delivery address" : null
+    setAddressError(nextAddressError)
+    setForceExpandAddress(!!nextAddressError)
+
     if (!canPlaceOrder) return
 
     setIsProcessing(true)
@@ -122,6 +134,8 @@ export default function CheckoutPage() {
   const handleAuthSuccess = () => {
     setShowAuthModal(false)
     triggerHaptic("success")
+    const savedProfile = getUserProfile()
+    if (savedProfile?.fullName) setFullName(savedProfile.fullName)
   }
 
   useEffect(() => {
@@ -155,7 +169,12 @@ export default function CheckoutPage() {
       exit="exit"
       transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
-      <PhoneAuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} onSuccess={handleAuthSuccess} />
+      <PhoneAuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+        required={!isAuthenticated}
+      />
 
       <AnimatePresence>
         {showSuccess && (
@@ -205,12 +224,16 @@ export default function CheckoutPage() {
             <h2 className="text-lg font-bold mb-4">Delivery Details</h2>
             <CollapsibleAddressForm
               address={address}
-              fullName={fullName}
-              phoneNumber={phoneNumber}
-              isPhoneVerified={isAuthenticated}
-              onAddressChange={setAddress}
-              onFullNameChange={setFullName}
-              onPhoneChange={setPhoneNumber}
+              showContactFields={false}
+              onAddressChange={(next) => {
+                setAddress(next)
+                if (next.trim().length >= 20) {
+                  setAddressError(null)
+                  setForceExpandAddress(false)
+                }
+              }}
+              addressError={addressError}
+              forceManualExpanded={forceExpandAddress}
             />
           </motion.div>
 
@@ -299,7 +322,7 @@ export default function CheckoutPage() {
             <Button
               size="lg"
               className="w-full rounded-2xl h-16 text-base font-semibold transition-all duration-300 active:scale-[0.98]"
-              disabled={!canPlaceOrder || isProcessing}
+              disabled={cart.length === 0 || isProcessing}
               onClick={handlePlaceOrder}
             >
               <AnimatePresence mode="wait">
@@ -329,14 +352,10 @@ export default function CheckoutPage() {
                 className="text-xs text-muted-foreground text-center mt-3"
               >
                 {!isAuthenticated
-                  ? "Please verify your phone number to continue"
-                  : !fullName.trim()
-                    ? "Please enter your name"
-                    : !isPhoneValid
-                      ? "Please enter a valid Egyptian phone number"
-                      : !isAddressValid
-                        ? "Please enter your full delivery address"
-                        : "Please fill in all required fields"}
+                  ? "Please sign in to continue checkout"
+                  : !isAddressValid
+                    ? "Please enter your full delivery address"
+                    : "Please fill in all required fields"}
               </motion.p>
             )}
           </motion.div>

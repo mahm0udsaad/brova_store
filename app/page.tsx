@@ -1,33 +1,47 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { LayoutGrid } from "lucide-react"
+import { LayoutGrid, SlidersHorizontal } from "lucide-react"
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion"
 import { BottomNav } from "@/components/bottom-nav"
 import { CategoryTabs } from "@/components/category-tabs"
 import { CategoryBentoGrid } from "@/components/category-bento-grid"
 import { ProductCard } from "@/components/product-card"
-import { CategoryBottomSheet } from "@/components/category-bottom-sheet"
+import { CategorySheetContent } from "@/components/category-sheet-content"
+import { Header } from "@/components/header"
 import { products } from "@/lib/products"
 import { useCart } from "@/hooks/use-cart"
 import { triggerHaptic } from "@/lib/haptics"
+import { OnboardingWizard } from "@/components/onboarding-wizard"
+import { useModalStack } from "@/components/modal-stack/modal-stack-context"
 
 const categories = ["All", "Hoodies", "Joggers", "Shorts", "T-Shirts", "Accessories"]
 
 export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState("All")
-  const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false)
   const [viewMode, setViewMode] = useState<"tabs" | "bento">("tabs")
   const { itemCount } = useCart()
+  const { present } = useModalStack()
 
   const filteredProducts = useMemo(() => {
     if (activeCategory === "All") return products
     return products.filter((p) => p.category.toLowerCase() === activeCategory.toLowerCase().replace("-", ""))
   }, [activeCategory])
 
-  const handleMenuClick = () => {
+  const handleLayoutClick = () => {
     triggerHaptic("light")
     setViewMode(viewMode === "tabs" ? "bento" : "tabs")
+  }
+
+  const handleCategoryClick = () => {
+    triggerHaptic("light")
+    present(
+      <CategorySheetContent
+        categories={categories}
+        activeCategory={activeCategory}
+        onCategoryChange={setActiveCategory}
+      />
+    )
   }
 
   const handleCategoryChange = (category: string) => {
@@ -39,29 +53,34 @@ export default function HomePage() {
 
   return (
     <LayoutGroup>
-      <div className="min-h-screen bg-background pb-24">
+      <div className="min-h-screen bg-background">
         <div className="max-w-md mx-auto px-4 md:max-w-2xl lg:max-w-6xl">
           {/* Header */}
-          <motion.header
-            className="flex items-center justify-between py-4"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <motion.button
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                viewMode === "bento" ? "bg-foreground text-background" : "bg-muted"
-              }`}
-              whileTap={{ scale: 0.9 }}
-              onClick={handleMenuClick}
-              aria-label="Toggle category view"
-            >
-              <LayoutGrid className="w-5 h-5" />
-            </motion.button>
-            <motion.div className="w-10 h-10 rounded-full bg-muted overflow-hidden" whileHover={{ scale: 1.05 }}>
-              <img src="/profile-avatar-streetwear.jpg" alt="Profile" className="object-cover w-full h-full" />
-            </motion.div>
-          </motion.header>
+          <Header 
+            showLogo 
+            leftAction={
+              <motion.button
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors bg-muted`}
+                whileTap={{ scale: 0.9 }}
+                onClick={handleCategoryClick}
+                aria-label="Filter categories"
+              >
+                <SlidersHorizontal className="w-5 h-5" />
+              </motion.button>
+            }
+            rightAction={
+               <motion.button
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                  viewMode === "bento" ? "bg-foreground text-background" : "bg-muted"
+                }`}
+                whileTap={{ scale: 0.9 }}
+                onClick={handleLayoutClick}
+                aria-label="Toggle category view"
+              >
+                <LayoutGrid className="w-5 h-5" />
+              </motion.button>
+            }
+          />
 
           {/* Hero Section */}
           <motion.div
@@ -135,14 +154,7 @@ export default function HomePage() {
 
         <BottomNav cartCount={itemCount} />
 
-        {/* CategoryBottomSheet component */}
-        <CategoryBottomSheet
-          isOpen={isCategorySheetOpen}
-          onClose={() => setIsCategorySheetOpen(false)}
-          categories={categories}
-          activeCategory={activeCategory}
-          onCategoryChange={setActiveCategory}
-        />
+        <OnboardingWizard />
       </div>
     </LayoutGroup>
   )

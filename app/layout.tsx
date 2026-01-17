@@ -3,10 +3,16 @@ import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import Script from "next/script"
+import { ThemeProvider } from "@/components/theme-provider"
+import { ThemeToggle } from "@/components/theme-toggle"
+import { ModalStackProvider } from "@/components/modal-stack/modal-stack-context"
+import { ModalStackContainer } from "@/components/modal-stack/modal-stack-container"
+import { PageScaleWrapper } from "@/components/modal-stack/page-scale-wrapper"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
+// ... metadata and other exports ...
 
 export const metadata: Metadata = {
   title: {
@@ -130,12 +136,20 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <Script id="json-ld" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       </head>
-      <body className="font-sans antialiased">
-        {children}
+      <body className="font-sans antialiased bg-black overflow-hidden">
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+          <ModalStackProvider>
+            <PageScaleWrapper>
+              {children}
+              <ThemeToggle />
+            </PageScaleWrapper>
+            <ModalStackContainer />
+          </ModalStackProvider>
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>

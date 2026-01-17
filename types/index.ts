@@ -14,6 +14,11 @@ export interface CartItem {
   product: Product
   quantity: number
   selectedSize: string
+  customDesign?: {
+    frontImage?: string
+    backImage?: string
+    color: string
+  }
 }
 
 export interface Address {
@@ -39,4 +44,10 @@ export interface Order {
   shippingFee: number
   total: number
   createdAt: string
+}
+
+export interface UserProfile {
+  fullName: string
+  phoneNumber: string
+  address: string
 }

@@ -6,7 +6,8 @@ import { motion, AnimatePresence, LayoutGroup } from "framer-motion"
 import { Header } from "@/components/header"
 import { BottomNav } from "@/components/bottom-nav"
 import { ProductImageSlider } from "@/components/product-image-slider"
-import { TryOnBottomSheet } from "@/components/try-on-bottom-sheet"
+import { TryOnSheetContent } from "@/components/try-on-sheet-content"
+import { useModalStack } from "@/components/modal-stack/modal-stack-context"
 import { Button } from "@/components/ui/button"
 import { products } from "@/lib/products"
 import { useCart } from "@/hooks/use-cart"
@@ -23,10 +24,10 @@ export default function ProductPageClient({ productId }: ProductPageClientProps)
   const router = useRouter()
   const product = products.find((p) => p.id === productId)
   const { addToCart, itemCount } = useCart()
+  const { present } = useModalStack()
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
   const [isAdding, setIsAdding] = useState(false)
   const [showAdded, setShowAdded] = useState(false)
-  const [isTryOnOpen, setIsTryOnOpen] = useState(false)
   const [isFav, setIsFav] = useState(false)
 
   useEffect(() => {
@@ -72,7 +73,12 @@ export default function ProductPageClient({ productId }: ProductPageClientProps)
   }
 
   const handleTryOn = () => {
-    setIsTryOnOpen(true)
+    present(
+      <TryOnSheetContent 
+        productImage={productImages[0]}
+        productName={product.name}
+      />
+    )
   }
 
   const handleShare = async () => {
@@ -110,7 +116,7 @@ export default function ProductPageClient({ productId }: ProductPageClientProps)
   return (
     <LayoutGroup>
       <motion.div
-        className="min-h-screen bg-background pb-24"
+        className="min-h-screen bg-background"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -282,13 +288,6 @@ export default function ProductPageClient({ productId }: ProductPageClientProps)
         </div>
 
         <BottomNav cartCount={itemCount} />
-
-        <TryOnBottomSheet
-          isOpen={isTryOnOpen}
-          onClose={() => setIsTryOnOpen(false)}
-          productImage={productImages[0]}
-          productName={product.name}
-        />
       </motion.div>
     </LayoutGroup>
   )

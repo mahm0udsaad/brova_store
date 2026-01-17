@@ -13,17 +13,30 @@ export function useCart() {
     setIsLoaded(true)
   }, [])
 
-  const addToCart = useCallback((product: Product, size: string, quantity = 1) => {
+  const addToCart = useCallback((product: Product, size: string, quantity = 1, customDesign?: CartItem["customDesign"]) => {
     setCart((prev) => {
-      const existingIndex = prev.findIndex((item) => item.product.id === product.id && item.selectedSize === size)
-
+      // For custom designs, we always add a new item instead of merging
+      // For regular products, we merge if same id and size
+      
       let newCart: CartItem[]
-      if (existingIndex >= 0) {
-        newCart = prev.map((item, idx) =>
-          idx === existingIndex ? { ...item, quantity: item.quantity + quantity } : item,
-        )
+      
+      if (customDesign) {
+        // Always add new item for custom designs (could be improved to check deep equality but simple is safer)
+        newCart = [...prev, { product, selectedSize: size, quantity, customDesign }]
       } else {
-        newCart = [...prev, { product, selectedSize: size, quantity }]
+        const existingIndex = prev.findIndex((item) => 
+          item.product.id === product.id && 
+          item.selectedSize === size && 
+          !item.customDesign
+        )
+
+        if (existingIndex >= 0) {
+          newCart = prev.map((item, idx) =>
+            idx === existingIndex ? { ...item, quantity: item.quantity + quantity } : item,
+          )
+        } else {
+          newCart = [...prev, { product, selectedSize: size, quantity }]
+        }
       }
 
       saveCart(newCart)

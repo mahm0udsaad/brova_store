@@ -2,26 +2,41 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, Phone, Loader2, ArrowRight } from "lucide-react"
+import { X, Phone, Loader2, ArrowRight, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { OtpInput } from "@/components/otp-input"
 import { createClient } from "@/lib/supabase/client"
 import { triggerHaptic, playSuccessSound } from "@/lib/haptics"
+import { getUserProfile, saveUserProfile } from "@/lib/store"
 
 interface PhoneAuthModalProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
+  required?: boolean
 }
 
-export function PhoneAuthModal({ isOpen, onClose, onSuccess }: PhoneAuthModalProps) {
-  const [step, setStep] = useState<"phone" | "otp">("phone")
+export function PhoneAuthModal({ isOpen, onClose, onSuccess, required = false }: PhoneAuthModalProps) {
+  const [step, setStep] = useState<"name" | "phone" | "otp">("name")
+  const [fullName, setFullName] = useState("")
   const [phone, setPhone] = useState("")
   const [otp, setOtp] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [countdown, setCountdown] = useState(0)
+
+  useEffect(() => {
+    if (!isOpen) return
+    const existingProfile = getUserProfile()
+    setFullName(existingProfile?.fullName ?? "")
+    setPhone(existingProfile?.phoneNumber?.replace(/^\+?20?/, "") ?? "")
+    setStep("name")
+    setOtp("")
+    setError(null)
+    setIsLoading(false)
+    setCountdown(0)
+  }, [isOpen])
 
   useEffect(() => {
     if (countdown > 0) {
@@ -52,6 +67,11 @@ export function PhoneAuthModal({ isOpen, onClose, onSuccess }: PhoneAuthModalPro
   }
 
   const handleSendOtp = async () => {
+    if (!fullName.trim()) {
+      setError("Please enter your name")
+      setStep("name")
+      return
+    }
     if (!phone.trim()) {
       setError("Please enter your phone number")
       return
@@ -119,6 +139,13 @@ export function PhoneAuthModal({ isOpen, onClose, onSuccess }: PhoneAuthModalPro
         return
       }
 
+      const existingProfile = getUserProfile()
+      saveUserProfile({
+        fullName: fullName.trim(),
+        phoneNumber: formattedPhone,
+        address: existingProfile?.address ?? "",
+      })
+
       triggerHaptic("success")
       playSuccessSound()
       onSuccess()
@@ -137,7 +164,9 @@ export function PhoneAuthModal({ isOpen, onClose, onSuccess }: PhoneAuthModalPro
   }
 
   const handleClose = () => {
-    setStep("phone")
+    if (required) return
+    setStep("name")
+    setFullName("")
     setPhone("")
     setOtp("")
     setError(null)
@@ -169,7 +198,8 @@ export function PhoneAuthModal({ isOpen, onClose, onSuccess }: PhoneAuthModalPro
               {/* Close Button */}
               <button
                 onClick={handleClose}
-                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-muted flex items-center justify-center"
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-muted flex items-center justify-center disabled:opacity-40"
+                disabled={required}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -177,19 +207,35 @@ export function PhoneAuthModal({ isOpen, onClose, onSuccess }: PhoneAuthModalPro
               {/* Header */}
               <div className="text-center mb-6">
                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <Phone className="w-8 h-8 text-primary" />
+                  {step === "name" ? <User className="w-8 h-8 text-primary" /> : <Phone className="w-8 h-8 text-primary" />}
                 </div>
                 <h2 className="text-xl font-bold uppercase tracking-tight">
-                  {step === "phone" ? "Sign In" : "Verify Code"}
+                  {step === "name" ? "Welcome" : step === "phone" ? "Sign In" : "Verify Code"}
                 </h2>
                 <p className="text-sm text-muted-foreground mt-2">
-                  {step === "phone" ? "Enter your phone number to continue" : `We sent a code to ${phone}`}
+                  {step === "name"
+                    ? "Tell us your name to continue"
+                    : step === "phone"
+                      ? "Enter your phone number to continue"
+                      : `We sent a code to ${phone}`}
                 </p>
               </div>
 
               {/* Form */}
               <div className="space-y-4">
-                {step === "phone" ? (
+                {step === "name" ? (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">Name</label>
+                    <Input
+                      type="text"
+                      placeholder="Your name"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="h-14 rounded-2xl bg-muted border-0 text-base"
+                      autoComplete="name"
+                    />
+                  </div>
+                ) : step === "phone" ? (
                   <div>
                     <label className="text-sm font-medium text-muted-foreground mb-2 block">Phone Number (Egypt)</label>
                     <div className="relative">
@@ -230,6 +276,25 @@ export function PhoneAuthModal({ isOpen, onClose, onSuccess }: PhoneAuthModalPro
                   >
                     {error}
                   </motion.p>
+                )}
+
+                {step === "name" && (
+                  <Button
+                    onClick={() => {
+                      if (!fullName.trim()) {
+                        setError("Please enter your name")
+                        return
+                      }
+                      setError(null)
+                      setStep("phone")
+                      triggerHaptic("light")
+                    }}
+                    disabled={isLoading}
+                    className="w-full h-14 rounded-2xl text-base font-semibold"
+                  >
+                    Continue
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
                 )}
 
                 {step === "phone" && (

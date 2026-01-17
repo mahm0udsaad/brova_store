@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { ChevronDown, MapPin, Loader2, Navigation, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -10,28 +10,36 @@ import { triggerHaptic, playSuccessSound } from "@/lib/haptics"
 
 interface CollapsibleAddressFormProps {
   address: string
-  fullName: string
-  phoneNumber: string
+  fullName?: string
+  phoneNumber?: string
   isPhoneVerified?: boolean
   onAddressChange: (address: string) => void
-  onFullNameChange: (name: string) => void
-  onPhoneChange: (phone: string) => void
+  onFullNameChange?: (name: string) => void
+  onPhoneChange?: (phone: string) => void
   showContactFields?: boolean
+  addressError?: string | null
+  forceManualExpanded?: boolean
 }
 
 export function CollapsibleAddressForm({
   address,
-  fullName,
-  phoneNumber,
+  fullName = "",
+  phoneNumber = "",
   isPhoneVerified = false,
   onAddressChange,
   onFullNameChange,
   onPhoneChange,
   showContactFields = true,
+  addressError = null,
+  forceManualExpanded = false,
 }: CollapsibleAddressFormProps) {
   const [isManualExpanded, setIsManualExpanded] = useState(false)
   const [isLoadingLocation, setIsLoadingLocation] = useState(false)
   const [locationError, setLocationError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (forceManualExpanded) setIsManualExpanded(true)
+  }, [forceManualExpanded])
 
   const handleGetLocation = async () => {
     if (!navigator.geolocation) {
@@ -81,6 +89,7 @@ export function CollapsibleAddressForm({
             .join(", ")
 
           onAddressChange(formattedAddress)
+          setIsManualExpanded(true)
           playSuccessSound()
           triggerHaptic("success")
         } catch (err) {
@@ -120,7 +129,7 @@ export function CollapsibleAddressForm({
               type="text"
               placeholder="Your full name"
               value={fullName}
-              onChange={(e) => onFullNameChange(e.target.value)}
+              onChange={(e) => onFullNameChange?.(e.target.value)}
               className="h-12 rounded-xl bg-muted border-0"
             />
           </div>
@@ -133,7 +142,7 @@ export function CollapsibleAddressForm({
                 type="tel"
                 placeholder="1XX XXX XXXX"
                 value={phoneNumber.replace(/^\+?20?/, "")}
-                onChange={(e) => onPhoneChange(e.target.value.replace(/[^\d\s]/g, ""))}
+                onChange={(e) => onPhoneChange?.(e.target.value.replace(/[^\d\s]/g, ""))}
                 className={`pl-12 pr-20 h-12 rounded-xl bg-muted transition-all ${
                   isPhoneVerified ? "border-2 border-green-500/50 bg-green-500/5" : "border-0"
                 }`}
@@ -193,7 +202,7 @@ export function CollapsibleAddressForm({
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-accent/30 rounded-xl p-3 text-sm"
+            className={`rounded-xl p-3 text-sm ${addressError ? "bg-red-500/10 ring-1 ring-red-500/30" : "bg-accent/30"}`}
           >
             <p className="text-muted-foreground">{address}</p>
           </motion.div>
@@ -228,8 +237,11 @@ export function CollapsibleAddressForm({
                     placeholder="Building number, Street name, District/Area, City (Cairo/Giza), Landmark (optional)"
                     value={address}
                     onChange={(e) => onAddressChange(e.target.value)}
-                    className="min-h-[100px] rounded-xl bg-card border-0 resize-none"
+                    className={`min-h-[120px] rounded-xl bg-card border-0 resize-none ${
+                      addressError ? "ring-2 ring-red-500/40" : ""
+                    }`}
                   />
+                  {addressError && <p className="text-xs text-red-500 mt-2">{addressError}</p>}
                   <p className="text-xs text-muted-foreground mt-2">
                     Example: 15 El-Tahrir Street, Dokki, Giza, Near Metro Station
                   </p>

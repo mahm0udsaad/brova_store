@@ -14,9 +14,10 @@ interface TryOnBottomSheetProps {
   onClose: () => void
   productImage: string
   productName: string
+  productImageFile?: File | null
 }
 
-export function TryOnBottomSheet({ isOpen, onClose, productImage, productName }: TryOnBottomSheetProps) {
+export function TryOnBottomSheet({ isOpen, onClose, productImage, productName, productImageFile }: TryOnBottomSheetProps) {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [tryOnResult, setTryOnResult] = useState<string | null>(null)
@@ -85,7 +86,12 @@ export function TryOnBottomSheet({ isOpen, onClose, productImage, productName }:
       // Prepare form data
       const formData = new FormData()
       formData.append("userImage", file)
-      formData.append("productImageUrl", productImage)
+      
+      if (productImageFile) {
+        formData.append("productImageFile", productImageFile)
+      } else {
+        formData.append("productImageUrl", productImage)
+      }
 
       // Call the try-on API
       const apiResponse = await fetch("/api/try-on", {

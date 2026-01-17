@@ -1,0 +1,98 @@
+[
+  {
+    "id": "fire",
+    "name": "Fire",
+    "emoji": "🔥",
+    "tags": ["hot", "flame", "trending"]
+  },
+  {
+    "id": "heart",
+    "name": "Heart",
+    "emoji": "💖",
+    "tags": ["love", "favorite"]
+  },
+  {
+    "id": "party",
+    "name": "Party",
+    "emoji": "🎉",
+    "tags": ["celebrate", "fun"]
+  },
+  {
+    "id": "eyes",
+    "name": "Eyes",
+    "emoji": "👀",
+    "tags": ["looking", "watching"]
+  },
+  {
+    "id": "sparkles",
+    "name": "Sparkles",
+    "emoji": "✨",
+    "tags": ["shine", "magic"]
+  },
+  {
+    "id": "rocket",
+    "name": "Rocket",
+    "emoji": "🚀",
+    "tags": ["space", "launch"]
+  },
+  {
+    "id": "skull",
+    "name": "Skull",
+    "emoji": "💀",
+    "tags": ["edgy", "streetwear"]
+  },
+  {
+    "id": "rainbow",
+    "name": "Rainbow",
+    "emoji": "🌈",
+    "tags": ["colorful", "pride"]
+  },
+  {
+    "id": "cap",
+    "name": "Cap",
+    "emoji": "🧢",
+    "tags": ["hat", "streetwear"]
+  },
+  {
+    "id": "sneaker",
+    "name": "Sneaker",
+    "emoji": "👟",
+    "tags": ["shoes", "streetwear"]
+  },
+  {
+    "id": "tshirt",
+    "name": "T-Shirt",
+    "emoji": "👕",
+    "tags": ["clothing", "fashion"]
+  },
+  {
+    "id": "sunglasses",
+    "name": "Sunglasses",
+    "emoji": "🕶️",
+    "tags": ["cool", "accessories"]
+  },
+  {
+    "id": "lightning",
+    "name": "Lightning",
+    "emoji": "⚡",
+    "tags": ["power", "energy"]
+  },
+  {
+    "id": "crown",
+    "name": "Crown",
+    "emoji": "👑",
+    "tags": ["king", "queen", "royalty"]
+  },
+  {
+    "id": "star",
+    "name": "Star",
+    "emoji": "⭐",
+    "tags": ["favorite", "quality"]
+  },
+  {
+    "id": "diamond",
+    "name": "Diamond",
+    "emoji": "💎",
+    "tags": ["luxury", "premium"]
+  }
+]

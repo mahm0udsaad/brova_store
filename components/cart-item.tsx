@@ -51,6 +51,11 @@ export function CartItem({ item, onUpdateQuantity, index = 0 }: CartItemProps) {
             <h3 className="font-bold text-foreground uppercase tracking-wide text-sm md:text-base line-clamp-1">
               {item.product.name}
             </h3>
+            {item.customDesign && (
+              <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 mb-1">
+                Custom Design
+              </span>
+            )}
             <p className="text-lg font-semibold text-foreground mt-0.5">EGP {item.product.price.toLocaleString()}</p>
             <p className="text-sm text-muted-foreground">Size: {item.selectedSize}</p>
           </div>
