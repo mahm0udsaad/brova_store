@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { Suspense, useEffect, useRef, useState } from "react"
+import type { ReactNode } from "react"
 import { Stage, Layer, Image as KonvaImage, Text as KonvaText, Transformer } from "react-konva"
 import useImage from "use-image"
 import { motion, AnimatePresence } from "framer-motion"
@@ -446,7 +447,7 @@ function DraggablePanel({
 }: { 
   title: string
   onClose?: () => void
-  children: React.ReactNode
+  children: ReactNode
   initialPosition?: { x: number, y: number }
   className?: string
 }) {
@@ -483,7 +484,7 @@ function DraggablePanel({
   )
 }
 
-export default function EditorPage() {
+function EditorPageInner() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const selectedColorParam = searchParams.get("color")
@@ -2186,5 +2187,19 @@ export default function EditorPage() {
         {/* Selected Element Properties Panel (Shows when element selected) */}
       </AnimatePresence>
     </div>
+  )
+}
+
+export default function EditorPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-[100dvh] w-full flex items-center justify-center bg-white text-neutral-900">
+          Loading editor…
+        </div>
+      }
+    >
+      <EditorPageInner />
+    </Suspense>
   )
 }
