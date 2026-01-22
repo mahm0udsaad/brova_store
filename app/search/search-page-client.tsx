@@ -29,7 +29,7 @@ export default function SearchPageClient({ products }: SearchPageClientProps) {
   }, [query, products])
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pt-[72px] pb-bottom-nav">
       <div className="max-w-md mx-auto px-4">
         <Header showBack title="Search" />
 

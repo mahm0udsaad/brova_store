@@ -185,7 +185,7 @@ export default function CheckoutPage() {
 
   return (
     <motion.div
-      className="min-h-screen bg-background pb-24"
+      className="min-h-screen bg-background pt-[72px] pb-bottom-nav"
       variants={pageVariants}
       initial="initial"
       animate="animate"

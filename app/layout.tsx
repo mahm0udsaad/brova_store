@@ -1,19 +1,13 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import Script from "next/script"
 import { ThemeProvider } from "@/components/theme-provider"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { ModalStackProvider } from "@/components/modal-stack/modal-stack-context"
 import { ModalStackContainer } from "@/components/modal-stack/modal-stack-container"
 import { PageScaleWrapper } from "@/components/modal-stack/page-scale-wrapper"
 import "./globals.css"
 import { SpeedInsights } from "@vercel/speed-insights/next"
-
-const _geist = Geist({ subsets: ["latin"] })
-const _geistMono = Geist_Mono({ subsets: ["latin"] })
-// ... metadata and other exports ...
 
 export const metadata: Metadata = {
   title: {
@@ -145,14 +139,13 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <ModalStackProvider>
             <PageScaleWrapper>
-          <SpeedInsights />
               {children}
-              <ThemeToggle />
+              <Analytics />
+              <SpeedInsights />
             </PageScaleWrapper>
             <ModalStackContainer />
           </ModalStackProvider>
         </ThemeProvider>
-        <Analytics />
       </body>
     </html>
   )

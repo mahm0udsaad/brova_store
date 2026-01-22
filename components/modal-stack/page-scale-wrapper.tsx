@@ -17,7 +17,7 @@ export function PageScaleWrapper({ children }: { children: ReactNode }) {
     <motion.div
       ref={scrollRef}
       className={cn(
-        "h-[100dvh] w-full bg-background overflow-y-auto overflow-x-hidden",
+        "h-[100dvh] w-full bg-background",
         "scrollbar-hide" // Optional: hide scrollbar for cleaner look
       )}
       initial={false}
@@ -38,7 +38,9 @@ export function PageScaleWrapper({ children }: { children: ReactNode }) {
         pointerEvents: isModalOpen ? "none" : "auto",
       }}
     >
-      {children}
+      <div className="h-full w-full overflow-y-auto overflow-x-hidden scrollbar-hide">
+        {children}
+      </div>
     </motion.div>
   )
 }

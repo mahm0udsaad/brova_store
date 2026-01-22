@@ -156,6 +156,20 @@ html {
 .pb-safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 20px);
 }
+.pt-safe-area-inset-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Bottom navbar spacing - accounts for floating nav height + center button extension */
+.pb-bottom-nav {
+  padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+}
+
+@media screen and (min-width: 640px) {
+  .pb-bottom-nav {
+    padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+  }
+}
 
 /* Button press effect */
 .active-scale:active {

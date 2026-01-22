@@ -1,40 +1,54 @@
-import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { isAdmin } from "@/lib/admin/is-admin"
+import { NextRequest, NextResponse } from "next/server"
 
-type UpdatePayload = {
-  price: number | null
-  published: boolean
-  sizes: string[]
-  images: string[]
-}
-
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
   if (!isAdmin(user)) {
-    return NextResponse.json({ error: "Not authorized" }, { status: 403 })
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const body = (await request.json()) as UpdatePayload
-  const sanitizedImages = (body.images || []).filter(Boolean)
-  const imageUrl = sanitizedImages[0] ?? null
+  const body = await req.json()
+  const { published, price, sizes, images } = body
 
   const admin = createAdminClient()
   const { error } = await admin
     .from("products")
     .update({
-      price: body.price,
-      published: body.published,
-      sizes: body.sizes || [],
-      images: sanitizedImages,
-      image_url: imageUrl,
+      published,
+      price,
+      sizes,
+      images,
+      image_url: images?.[0] || null,
     })
-    .eq("id", params.id)
+    .eq("id", id)
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ success: true })
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!isAdmin(user)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const admin = createAdminClient()
+  const { error } = await admin.from("products").delete().eq("id", id)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })

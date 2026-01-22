@@ -119,7 +119,7 @@ export default function ProductPageClient({ product }: ProductPageClientProps) {
   return (
     <LayoutGroup>
       <motion.div
-        className="min-h-screen bg-background"
+        className="min-h-screen bg-background pt-[72px] pb-bottom-nav"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -133,7 +133,7 @@ export default function ProductPageClient({ product }: ProductPageClientProps) {
 
             <motion.div
               layoutId={`product-image-${product.id}`}
-              className="relative w-full lg:sticky lg:top-0 lg:mt-8"
+              className="relative w-full lg:sticky lg:top-[72px] lg:mt-8"
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
             >
               <ProductImageSlider images={productImages} productName={product.name} onTryOn={handleTryOn} />

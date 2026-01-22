@@ -9,6 +9,7 @@ import { CategoryBentoGrid } from "@/components/category-bento-grid"
 import { ProductCard } from "@/components/product-card"
 import { CategorySheetContent } from "@/components/category-sheet-content"
 import { Header } from "@/components/header"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { useCart } from "@/hooks/use-cart"
 import { triggerHaptic } from "@/lib/haptics"
 import { OnboardingWizard } from "@/components/onboarding-wizard"
@@ -57,14 +58,15 @@ export default function HomePageClient({ products }: HomePageClientProps) {
 
   return (
     <LayoutGroup>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background pt-[72px] pb-bottom-nav">
         <div className="max-w-md mx-auto px-4 md:max-w-2xl lg:max-w-6xl">
           {/* Header */}
           <Header
             showLogo
+            showThemeToggle={false}
             leftAction={
               <motion.button
-                className="w-10 h-10 rounded-full flex items-center justify-center transition-colors bg-muted"
+                className="w-9 h-9 rounded-full flex items-center justify-center transition-colors bg-muted sm:w-10 sm:h-10"
                 whileTap={{ scale: 0.9 }}
                 onClick={handleCategoryClick}
                 aria-label="Filter categories"
@@ -73,22 +75,25 @@ export default function HomePageClient({ products }: HomePageClientProps) {
               </motion.button>
             }
             rightAction={
-              <motion.button
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                  viewMode === "bento" ? "bg-foreground text-background" : "bg-muted"
-                }`}
-                whileTap={{ scale: 0.9 }}
-                onClick={handleLayoutClick}
-                aria-label="Toggle category view"
-              >
-                <LayoutGrid className="w-5 h-5" />
-              </motion.button>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <motion.button
+                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors sm:w-10 sm:h-10 ${
+                    viewMode === "bento" ? "bg-foreground text-background" : "bg-muted"
+                  }`}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleLayoutClick}
+                  aria-label="Toggle category view"
+                >
+                  <LayoutGrid className="w-5 h-5" />
+                </motion.button>
+                <ThemeToggle compact />
+              </div>
             }
           />
 
           {/* Hero Section */}
           <motion.div
-            className="mb-6"
+            className="my-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.4 }}
