@@ -211,7 +211,15 @@ export function TryOnSheetContent({ productImage, productName, productImageFile,
             <p className="text-sm text-muted-foreground mb-2">Trying on:</p>
             <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-2xl">
               <div className="relative w-16 h-16 rounded-xl overflow-hidden">
-                <Image src={productImage || "/placeholder.svg"} alt={productName} fill className="object-cover" />
+                <Image 
+                  src={productImage || "/placeholder.svg"} 
+                  alt={productName} 
+                  fill 
+                  className="object-cover" 
+                  sizes="64px"
+                  quality={75}
+                  loading="lazy"
+                />
               </div>
               <p className="font-semibold">{productName}</p>
             </div>
@@ -280,6 +288,9 @@ export function TryOnSheetContent({ productImage, productName, productImageFile,
                     alt="Your photo"
                     fill
                     className="object-contain"
+                    sizes="(max-width: 768px) 100vw, 500px"
+                    quality={90}
+                    priority
                   />
                   
                   {/* Loading Overlay */}
@@ -382,7 +393,15 @@ export function TryOnSheetContent({ productImage, productName, productImageFile,
             </div>
 
             <div className="relative flex-1 w-full rounded-2xl overflow-hidden border border-primary/20 bg-black/5 shadow-2xl min-h-[400px]">
-              <Image src={tryOnResult || "/placeholder.svg"} alt="Try-on result" fill className="object-contain" />
+              <Image 
+                src={tryOnResult || "/placeholder.svg"} 
+                alt="Try-on result" 
+                fill 
+                className="object-contain" 
+                sizes="(max-width: 768px) 100vw, 500px"
+                quality={95}
+                priority
+              />
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
                 <motion.p 
                   initial={{ opacity: 0, y: 10 }}

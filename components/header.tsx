@@ -39,16 +39,16 @@ export function Header({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
-      <div className="flex items-center justify-between py-3 px-3 max-w-md mx-auto lg:max-w-lg sm:py-4 sm:px-4">
-        <div className="flex items-center justify-between gap-2 sm:gap-3">
+      <div className="flex items-center justify-between py-2 px-3 max-w-md mx-auto lg:max-w-lg sm:py-4 sm:px-4">
+        <div className="flex items-center justify-between gap-1.5 sm:gap-3">
           {showBack && (
             <motion.button
               onClick={handleBack}
-              className="w-9 h-9 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors sm:w-10 sm:h-10"
+              className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors sm:w-10 sm:h-10"
               whileTap={{ scale: 0.9 }}
               aria-label="Go back"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
             </motion.button>
           )}
 
@@ -58,7 +58,7 @@ export function Header({
             <motion.div
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              className="relative w-12 h-12 sm:w-[90px] sm:h-[90px]"
+              className="relative w-10 h-10 sm:w-[90px] sm:h-[90px]"
             >
               <Image 
                 src="/brova-logo-full.png" 
@@ -66,6 +66,8 @@ export function Header({
                 fill 
                 className="object-contain rounded-full object-left dark:invert shadow-xl"
                 priority
+                sizes="(max-width: 640px) 40px, 90px"
+                quality={90}
               />
             </motion.div>
           )}

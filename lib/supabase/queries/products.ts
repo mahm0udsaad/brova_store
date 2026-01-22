@@ -62,16 +62,33 @@ export function mapProductRow(row: ProductRow): Product {
   }
 }
 
-export async function listStorefrontProducts() {
+export async function listStorefrontProducts(options?: {
+  limit?: number
+  offset?: number
+  category?: string
+}) {
+  const { limit = 12, offset = 0, category } = options ?? {}
   const supabase = await createClient()
-  const { data, error } = await supabase
+
+  let query = supabase
     .from("products")
-    .select(productSelect)
+    .select(productSelect, { count: "exact" })
     .or("published.is.true,price.not.is.null")
     .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1)
 
-  if (error) return { data: [], error }
-  return { data: (data as ProductRow[]).map(mapProductRow), error: null }
+  if (category && category.toLowerCase() !== "all") {
+    query = query.eq("category_id", category.toLowerCase())
+  }
+
+  const { data, error, count } = await query
+
+  if (error) return { data: [], error, count: 0, hasMore: false }
+  
+  const products = (data as ProductRow[]).map(mapProductRow)
+  const hasMore = (count ?? 0) > offset + products.length
+
+  return { data: products, error: null, count: count ?? 0, hasMore }
 }
 
 export async function getStorefrontProductById(id: string) {

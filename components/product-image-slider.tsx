@@ -227,6 +227,7 @@ export function ProductImageSlider({ images, productName, onTryOn }: ProductImag
                 priority
                 draggable={false}
                 sizes={inFullscreen ? "100vw" : "(max-width: 768px) 100vw, 50vw"}
+                quality={90}
               />
             </div>
           </motion.div>
@@ -314,6 +315,8 @@ export function ProductImageSlider({ images, productName, onTryOn }: ProductImag
                 fill
                 className="object-cover"
                 sizes="56px"
+                quality={75}
+                loading="lazy"
               />
             </motion.button>
           ))}
@@ -370,6 +373,8 @@ export function ProductImageSlider({ images, productName, onTryOn }: ProductImag
                   fill
                   className="object-cover"
                   sizes="80px"
+                  quality={75}
+                  loading="lazy"
                 />
               </motion.button>
             ))}

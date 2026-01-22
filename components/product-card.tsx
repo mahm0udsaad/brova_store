@@ -11,6 +11,7 @@ import { triggerHaptic, playSuccessSound } from "@/lib/haptics"
 import { toggleFavorite, isFavorite } from "@/lib/favorites"
 import { useCart } from "@/hooks/use-cart"
 import { cn } from "@/lib/utils"
+import { blurPlaceholders } from "@/lib/image-utils"
 import type { Product } from "@/types"
 
 interface ProductCardProps {
@@ -84,6 +85,11 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-110"
             sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+            priority={index < 4}
+            quality={85}
+            loading={index < 4 ? "eager" : "lazy"}
+            placeholder="blur"
+            blurDataURL={blurPlaceholders.product}
           />
           <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
             <motion.button

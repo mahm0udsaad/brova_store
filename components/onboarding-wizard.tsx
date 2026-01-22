@@ -123,6 +123,8 @@ export function OnboardingWizard() {
                           fill
                           className="object-cover"
                           priority
+                          sizes="(max-width: 768px) 100vw, 400px"
+                          quality={90}
                         />
                       </div>
                     ) : (
@@ -133,6 +135,8 @@ export function OnboardingWizard() {
                           fill
                           className="object-contain"
                           priority
+                          sizes="192px"
+                          quality={90}
                         />
                       </div>
                     )}

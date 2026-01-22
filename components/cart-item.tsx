@@ -42,7 +42,15 @@ export function CartItem({ item, onUpdateQuantity, index = 0 }: CartItemProps) {
         whileHover={{ scale: 1.02 }}
         transition={{ type: "spring", stiffness: 400, damping: 25 }}
       >
-        <Image src={item.product.image || "/placeholder.svg"} alt={item.product.name} fill className="object-cover" />
+        <Image 
+          src={item.product.image || "/placeholder.svg"} 
+          alt={item.product.name} 
+          fill 
+          className="object-cover" 
+          sizes="(max-width: 768px) 80px, 96px"
+          quality={80}
+          loading="lazy"
+        />
       </motion.div>
 
       <div className="flex-1 min-w-0">

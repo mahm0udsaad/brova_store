@@ -4,6 +4,7 @@ import Image from "next/image"
 import { motion } from "framer-motion"
 import { triggerHaptic } from "@/lib/haptics"
 import { categoryData } from "@/lib/products"
+import { blurPlaceholders } from "@/lib/image-utils"
 
 interface CategoryBentoGridProps {
   onCategorySelect: (category: string) => void
@@ -60,6 +61,10 @@ export function CategoryBentoGrid({ onCategorySelect, activeCategory }: Category
               alt={category.name}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-110"
+              sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
+              quality={85}
+              placeholder="blur"
+              blurDataURL={blurPlaceholders.square}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-3">

@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { LayoutGrid, SlidersHorizontal } from "lucide-react"
+import { useState, useMemo, useEffect, useCallback, useRef } from "react"
+import { LayoutGrid, SlidersHorizontal, Loader2 } from "lucide-react"
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion"
 import { BottomNav } from "@/components/bottom-nav"
 import { CategoryTabs } from "@/components/category-tabs"
 import { CategoryBentoGrid } from "@/components/category-bento-grid"
 import { ProductCard } from "@/components/product-card"
+import { ProductGridSkeleton } from "@/components/product-card-skeleton"
 import { CategorySheetContent } from "@/components/category-sheet-content"
 import { Header } from "@/components/header"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -17,21 +18,81 @@ import { useModalStack } from "@/components/modal-stack/modal-stack-context"
 import type { Product } from "@/types"
 
 const categories = ["All", "Hoodies", "Joggers", "Shorts", "T-Shirts", "Accessories"]
+const PRODUCTS_PER_PAGE = 12
 
 interface HomePageClientProps {
   products: Product[]
 }
 
-export default function HomePageClient({ products }: HomePageClientProps) {
+export default function HomePageClient({ products: initialProducts }: HomePageClientProps) {
   const [activeCategory, setActiveCategory] = useState("All")
   const [viewMode, setViewMode] = useState<"tabs" | "bento">("tabs")
+  const [products, setProducts] = useState<Product[]>(initialProducts.slice(0, PRODUCTS_PER_PAGE))
+  const [isLoading, setIsLoading] = useState(false)
+  const [hasMore, setHasMore] = useState(initialProducts.length > PRODUCTS_PER_PAGE)
+  const [offset, setOffset] = useState(PRODUCTS_PER_PAGE)
   const { itemCount } = useCart()
   const { present } = useModalStack()
+  const loaderRef = useRef<HTMLDivElement>(null)
 
-  const filteredProducts = useMemo(() => {
-    if (activeCategory === "All") return products
-    return products.filter((p) => p.category?.toLowerCase() === activeCategory.toLowerCase().replace("-", ""))
-  }, [activeCategory, products])
+  // Reset when category changes
+  useEffect(() => {
+    const fetchInitialProducts = async () => {
+      setIsLoading(true)
+      setProducts([])
+      setOffset(0)
+
+      try {
+        const res = await fetch(`/api/products?limit=${PRODUCTS_PER_PAGE}&offset=0&category=${activeCategory}`)
+        const data = await res.json()
+        setProducts(data.products)
+        setHasMore(data.hasMore)
+        setOffset(data.products.length)
+      } catch (error) {
+        console.error("Failed to fetch products:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchInitialProducts()
+  }, [activeCategory])
+
+  // Infinite scroll with Intersection Observer
+  const loadMore = useCallback(async () => {
+    if (isLoading || !hasMore) return
+
+    setIsLoading(true)
+    try {
+      const res = await fetch(`/api/products?limit=${PRODUCTS_PER_PAGE}&offset=${offset}&category=${activeCategory}`)
+      const data = await res.json()
+      setProducts((prev) => [...prev, ...data.products])
+      setHasMore(data.hasMore)
+      setOffset((prev) => prev + data.products.length)
+    } catch (error) {
+      console.error("Failed to load more products:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [isLoading, hasMore, offset, activeCategory])
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoading) {
+          loadMore()
+        }
+      },
+      { threshold: 0.1, rootMargin: "100px" }
+    )
+
+    if (loaderRef.current) {
+      observer.observe(loaderRef.current)
+    }
+
+    return () => observer.disconnect()
+  }, [loadMore, hasMore, isLoading])
 
   const handleLayoutClick = () => {
     triggerHaptic("light")
@@ -58,33 +119,33 @@ export default function HomePageClient({ products }: HomePageClientProps) {
 
   return (
     <LayoutGroup>
-      <div className="min-h-screen bg-background pt-[72px] pb-bottom-nav">
-        <div className="max-w-md mx-auto px-4 md:max-w-2xl lg:max-w-6xl">
+      <div className="min-h-screen bg-background pt-14 pb-bottom-nav sm:pt-[72px]">
+        <div className="max-w-md mx-auto px-3 md:max-w-2xl lg:max-w-6xl sm:px-4">
           {/* Header */}
           <Header
             showLogo
             showThemeToggle={false}
             leftAction={
               <motion.button
-                className="w-9 h-9 rounded-full flex items-center justify-center transition-colors bg-muted sm:w-10 sm:h-10"
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-muted sm:w-10 sm:h-10"
                 whileTap={{ scale: 0.9 }}
                 onClick={handleCategoryClick}
                 aria-label="Filter categories"
               >
-                <SlidersHorizontal className="w-5 h-5" />
+                <SlidersHorizontal className="w-4 h-4 sm:w-5 sm:h-5" />
               </motion.button>
             }
             rightAction={
-              <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
                 <motion.button
-                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors sm:w-10 sm:h-10 ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors sm:w-10 sm:h-10 ${
                     viewMode === "bento" ? "bg-foreground text-background" : "bg-muted"
                   }`}
                   whileTap={{ scale: 0.9 }}
                   onClick={handleLayoutClick}
                   aria-label="Toggle category view"
                 >
-                  <LayoutGrid className="w-5 h-5" />
+                  <LayoutGrid className="w-4 h-4 sm:w-5 sm:h-5" />
                 </motion.button>
                 <ThemeToggle compact />
               </div>
@@ -93,16 +154,16 @@ export default function HomePageClient({ products }: HomePageClientProps) {
 
           {/* Hero Section */}
           <motion.div
-            className="my-6"
+            className="my-4 sm:my-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1, duration: 0.4 }}
           >
-            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Be Different</p>
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold uppercase tracking-tight text-balance">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-0.5 sm:text-xs sm:mb-1">Be Different</p>
+            <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold uppercase tracking-tight text-balance sm:text-3xl">
               Popular Products
             </h1>
-            <p className="text-sm md:text-base text-muted-foreground mt-2 max-w-md">
+            <p className="text-xs md:text-base text-muted-foreground mt-1.5 max-w-md sm:text-sm sm:mt-2">
               Never miss out on a hot release again with our latest drops newsletter.
             </p>
           </motion.div>
@@ -111,7 +172,7 @@ export default function HomePageClient({ products }: HomePageClientProps) {
             {viewMode === "bento" ? (
               <motion.div
                 key="bento"
-                className="mb-6"
+                className="mb-4 sm:mb-6"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
@@ -122,7 +183,7 @@ export default function HomePageClient({ products }: HomePageClientProps) {
             ) : (
               <motion.div
                 key="tabs"
-                className="mb-6"
+                className="mb-4 sm:mb-6"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -133,27 +194,51 @@ export default function HomePageClient({ products }: HomePageClientProps) {
             )}
           </AnimatePresence>
 
-          {/* Products Grid - Responsive */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeCategory}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-              className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-            >
-              {filteredProducts.map((product, index) => (
-                <ProductCard key={product.id} product={product} index={index} />
-              ))}
-            </motion.div>
-          </AnimatePresence>
+          {/* Products Grid - Initial Loading */}
+          {isLoading && products.length === 0 ? (
+            <ProductGridSkeleton count={8} />
+          ) : (
+            <>
+              {/* Products Grid */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeCategory}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.3 }}
+                  className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 sm:gap-4"
+                >
+                  {products.map((product, index) => (
+                    <ProductCard key={product.id} product={product} index={index} />
+                  ))}
+                </motion.div>
+              </AnimatePresence>
 
-          {/* Empty State */}
-          {filteredProducts.length === 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
-              <p className="text-muted-foreground">No products found in this category.</p>
-            </motion.div>
+              {/* Load More Trigger */}
+              <div ref={loaderRef} className="py-8 flex justify-center">
+                {isLoading && products.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex items-center gap-2 text-muted-foreground"
+                  >
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span className="text-sm">Loading more...</span>
+                  </motion.div>
+                )}
+                {!hasMore && products.length > 0 && (
+                  <p className="text-sm text-muted-foreground">You've seen all products</p>
+                )}
+              </div>
+
+              {/* Empty State */}
+              {products.length === 0 && !isLoading && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
+                  <p className="text-muted-foreground">No products found in this category.</p>
+                </motion.div>
+              )}
+            </>
           )}
         </div>
 

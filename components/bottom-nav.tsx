@@ -34,6 +34,9 @@ const BrovaIcon = ({ className, isActive }: { className?: string; isActive?: boo
         alt="Home" 
         fill 
         className={cn("object-contain transition-all duration-300", isActive ? "opacity-100" : "opacity-90")}
+        sizes="48px"
+        quality={90}
+        priority
       />
     </div>
   )
@@ -57,15 +60,15 @@ export function BottomNav({ cartCount = 0 }: BottomNavProps) {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 pointer-events-none">
       {/* Glow effect behind the center button */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-20 h-20 bg-primary/20 blur-2xl rounded-full -z-10" />
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-16 h-16 bg-primary/20 blur-2xl rounded-full -z-10 sm:bottom-8 sm:w-20 sm:h-20" />
       
       <motion.nav
-        className="max-w-md mx-auto mb-4 px-4 pointer-events-auto lg:max-w-lg sm:mb-6 sm:px-6"
+        className="max-w-md mx-auto mb-2 px-3 pointer-events-auto lg:max-w-lg sm:mb-4 sm:px-6"
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", stiffness: 260, damping: 20 }}
       >
-        <div className="bg-background/80 dark:bg-neutral-900/80 backdrop-blur-xl border border-border/50 rounded-[1.75rem] shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)] flex items-center justify-between px-3 py-2 sm:px-4 sm:py-2.5">
+        <div className="bg-background/80 dark:bg-neutral-900/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)] flex items-center justify-between px-2 py-1.5 sm:rounded-[1.75rem] sm:px-4 sm:py-2.5">
           {navItems.map(({ href, icon: Icon, label, badge, isMain }) => {
             const isActive = pathname === href || (href !== "/" && pathname.startsWith(href))
             
@@ -75,18 +78,18 @@ export function BottomNav({ cartCount = 0 }: BottomNavProps) {
                   key={href}
                   href={href}
                   onClick={handleNavClick}
-                  className="relative -top-4 flex flex-col items-center sm:-top-5"
+                  className="relative -top-3 flex flex-col items-center sm:-top-5"
                 >
                   <motion.div
                     className={cn(
-                      "size-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 sm:size-16",
+                      "size-11 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 sm:size-16",
                       isActive 
                         ? "bg-primary text-primary-foreground scale-105 rotate-6" 
                         : "bg-neutral-900 dark:bg-white text-white dark:text-black hover:scale-105"
                     )}
                     whileTap={{ scale: 0.9, rotate: 0 }}
                   >
-                    <Icon className="size-12 sm:size-14" />
+                    <Icon className="size-9 sm:size-14" />
                   </motion.div>
                 </Link>
               )
@@ -98,7 +101,7 @@ export function BottomNav({ cartCount = 0 }: BottomNavProps) {
                 href={href}
                 onClick={handleNavClick}
                 className={cn(
-                  "relative flex flex-col items-center justify-center gap-0.5 w-12 h-12 rounded-xl transition-all duration-300 sm:w-14 sm:h-14 sm:rounded-2xl",
+                  "relative flex flex-col items-center justify-center gap-0.5 w-10 h-10 rounded-lg transition-all duration-300 sm:w-14 sm:h-14 sm:rounded-2xl",
                   isActive ? "text-primary" : "text-muted-foreground hover:text-foreground",
                 )}
                 aria-label={label}
@@ -108,7 +111,7 @@ export function BottomNav({ cartCount = 0 }: BottomNavProps) {
                   whileTap={{ scale: 0.9 }}
                 >
                   {/* Icon rendering */}
-                    <Icon className={cn("size-5 transition-all duration-300 sm:size-6", isActive && "scale-110")} />
+                    <Icon className={cn("size-[18px] transition-all duration-300 sm:size-6", isActive && "scale-110")} />
 
                   {/* Cart badge */}
                   <AnimatePresence>
