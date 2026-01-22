@@ -7,6 +7,15 @@ type Props = {
   params: Promise<{ id: string }>
 }
 
+function getAbsoluteImageUrl(imagePath: string): string {
+  // If already a full URL, return as-is
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+    return imagePath
+  }
+  // Otherwise, prepend the domain
+  return `https://brova.vercel.app${imagePath}`
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
   const { data: product } = await getStorefrontProductById(id)
@@ -18,7 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const productImage = product.images && product.images.length > 0 ? product.images[0] : product.image
-  const absoluteImageUrl = `https://brova.vercel.app${productImage}`
+  const absoluteImageUrl = getAbsoluteImageUrl(productImage)
   const sizes = product.sizes.join(", ")
 
   return {
@@ -66,7 +75,7 @@ export default async function ProductPage({ params }: Props) {
     "@type": "Product",
     name: product.name,
     description: product.description,
-    image: `https://brova.vercel.app${productImage}`,
+    image: getAbsoluteImageUrl(productImage),
     category: product.category,
     offers: {
       "@type": "Offer",
