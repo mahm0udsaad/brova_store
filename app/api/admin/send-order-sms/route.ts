@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { isAdmin } from "@/lib/admin/is-admin"
+import { isAdmin } from "@/lib/admin/is-admin.server"
 import { sendOrderStatusSMS } from "@/lib/twilio"
 
 export async function POST(request: Request) {
@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     } = await supabase.auth.getUser()
 
     // Check if user is admin
-    if (!user || !(await isAdmin(user.id))) {
+    if (!user || !(await isAdmin(user))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
