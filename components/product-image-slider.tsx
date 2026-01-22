@@ -6,6 +6,7 @@ import { motion, AnimatePresence, type PanInfo, useMotionValue, useTransform } f
 import { Camera, ChevronLeft, ChevronRight, Maximize2, X, ZoomIn, ZoomOut, Download, Share2 } from "lucide-react"
 import { triggerHaptic } from "@/lib/haptics"
 import { cn } from "@/lib/utils"
+import { blurPlaceholders } from "@/lib/image-utils"
 
 interface ProductImageSliderProps {
   images: string[]
@@ -228,6 +229,8 @@ export function ProductImageSlider({ images, productName, onTryOn }: ProductImag
                 draggable={false}
                 sizes={inFullscreen ? "100vw" : "(max-width: 768px) 100vw, 50vw"}
                 quality={90}
+                placeholder="blur"
+                blurDataURL={blurPlaceholders.product}
               />
             </div>
           </motion.div>
@@ -317,6 +320,8 @@ export function ProductImageSlider({ images, productName, onTryOn }: ProductImag
                 sizes="56px"
                 quality={75}
                 loading="lazy"
+                placeholder="blur"
+                blurDataURL={blurPlaceholders.thumbnail}
               />
             </motion.button>
           ))}
@@ -375,6 +380,8 @@ export function ProductImageSlider({ images, productName, onTryOn }: ProductImag
                   sizes="80px"
                   quality={75}
                   loading="lazy"
+                  placeholder="blur"
+                  blurDataURL={blurPlaceholders.thumbnail}
                 />
               </motion.button>
             ))}

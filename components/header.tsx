@@ -7,6 +7,7 @@ import { motion } from "framer-motion"
 import { triggerHaptic } from "@/lib/haptics"
 import { ReactNode } from "react"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { blurPlaceholders } from "@/lib/image-utils"
 
 interface HeaderProps {
   showBack?: boolean
@@ -68,6 +69,8 @@ export function Header({
                 priority
                 sizes="(max-width: 640px) 40px, 90px"
                 quality={90}
+                placeholder="blur"
+                blurDataURL={blurPlaceholders.logo}
               />
             </motion.div>
           )}

@@ -129,6 +129,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Return the result image URL
+      console.log("Returning success response with resultImage:", resultImageUrl);
       return NextResponse.json({
         success: true,
         message: "Try-on generated successfully",
@@ -143,6 +144,7 @@ export async function POST(request: NextRequest) {
     }
   } catch (error: any) {
     console.error("Try-on API error:", error);
+    console.error("Error stack:", error?.stack);
 
     // Handle specific error types
     if (error?.status === 429) {
@@ -159,10 +161,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const errorMessage = error?.message || "Unknown error";
+    console.error("Returning error response:", errorMessage);
     return NextResponse.json(
       {
         error: "Failed to generate try-on result",
-        details: error?.message || "Unknown error",
+        details: errorMessage,
       },
       { status: 500 }
     );

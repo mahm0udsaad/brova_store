@@ -110,6 +110,7 @@ export function TryOnSheetContent({ productImage, productName, productImageFile,
     triggerHaptic("medium")
     setIsProcessing(true)
     setErrorMessage(null)
+    setTryOnResult(null) // Clear any previous result
 
     try {
       if (typeof previousCredits === "number") {
@@ -140,13 +141,32 @@ export function TryOnSheetContent({ productImage, productName, productImageFile,
         body: formData,
       })
 
-      const data = await apiResponse.json()
+      console.log("API Response status:", apiResponse.status, "OK:", apiResponse.ok)
+      
+      const responseText = await apiResponse.text()
+      console.log("API Response raw text:", responseText)
+      
+      let data
+      try {
+        data = JSON.parse(responseText)
+        console.log("API Response parsed data:", data)
+      } catch (parseError) {
+        console.error("Failed to parse response as JSON:", parseError)
+        throw new Error("Invalid response from server")
+      }
 
       if (!apiResponse.ok) {
+        console.error("API Response not OK. Status:", apiResponse.status, "Data:", data)
         throw new Error(data.error || "Failed to generate try-on")
       }
 
       // Set the result image
+      if (!data.resultImage) {
+        console.error("No resultImage in response data:", data)
+        throw new Error("No result image in response")
+      }
+      
+      console.log("Setting try-on result:", data.resultImage)
       setTryOnResult(data.resultImage)
       if (typeof data.newCredits === "number") {
         setCredits(data.newCredits)

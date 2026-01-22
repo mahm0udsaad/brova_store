@@ -25,6 +25,7 @@ export function PhoneAuthModal({ isOpen, onClose, onSuccess, required = false }:
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [countdown, setCountdown] = useState(0)
+  const [sentTo, setSentTo] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isOpen) return
@@ -36,6 +37,7 @@ export function PhoneAuthModal({ isOpen, onClose, onSuccess, required = false }:
     setError(null)
     setIsLoading(false)
     setCountdown(0)
+    setSentTo(null)
   }, [isOpen])
 
   useEffect(() => {
@@ -52,18 +54,23 @@ export function PhoneAuthModal({ isOpen, onClose, onSuccess, required = false }:
     }
   }, [otp, step])
 
-  const formatPhoneForSupabase = (phoneNumber: string): string => {
-    const cleaned = phoneNumber.replace(/\D/g, "")
-    if (cleaned.startsWith("0")) {
-      return `+2${cleaned}`
+  const normalizeEgyptPhone = (phoneNumber: string) => {
+    const digitsOnly = phoneNumber.replace(/\D/g, "")
+    if (!digitsOnly) {
+      return { isValid: false, e164: "", display: "" }
     }
-    if (cleaned.startsWith("20")) {
-      return `+${cleaned}`
+
+    let national = digitsOnly
+    if (digitsOnly.startsWith("20")) {
+      national = digitsOnly.slice(2)
+    } else if (digitsOnly.startsWith("0")) {
+      national = digitsOnly.slice(1)
     }
-    if (cleaned.startsWith("+20")) {
-      return cleaned
-    }
-    return `+20${cleaned}`
+
+    const isValid = /^1[0125]\d{8}$/.test(national)
+    const e164 = isValid ? `+20${national}` : ""
+    const display = isValid ? `+20${national}` : ""
+    return { isValid, e164, display }
   }
 
   const handleSendOtp = async () => {
@@ -77,8 +84,8 @@ export function PhoneAuthModal({ isOpen, onClose, onSuccess, required = false }:
       return
     }
 
-    const cleanPhone = phone.replace(/\s/g, "")
-    if (!/^(\+20|0)?1[0125]\d{8}$/.test(cleanPhone)) {
+    const normalized = normalizeEgyptPhone(phone)
+    if (!normalized.isValid) {
       setError("Please enter a valid Egyptian phone number")
       return
     }
@@ -89,10 +96,11 @@ export function PhoneAuthModal({ isOpen, onClose, onSuccess, required = false }:
 
     try {
       const supabase = createClient()
-      const formattedPhone = formatPhoneForSupabase(phone)
+      const formattedPhone = normalized.e164
 
       const { error: signInError } = await supabase.auth.signInWithOtp({
         phone: formattedPhone,
+        options: { channel: "sms" },
       })
 
       if (signInError) {
@@ -106,6 +114,7 @@ export function PhoneAuthModal({ isOpen, onClose, onSuccess, required = false }:
 
       setStep("otp")
       setCountdown(60)
+      setSentTo(normalized.display)
       playSuccessSound()
     } catch (err) {
       setError("Failed to send verification code. Please try again.")
@@ -125,7 +134,13 @@ export function PhoneAuthModal({ isOpen, onClose, onSuccess, required = false }:
 
     try {
       const supabase = createClient()
-      const formattedPhone = formatPhoneForSupabase(phone)
+      const normalized = normalizeEgyptPhone(phone)
+      if (!normalized.isValid) {
+        setError("Please enter a valid Egyptian phone number")
+        setIsLoading(false)
+        return
+      }
+      const formattedPhone = normalized.e164
 
       const { data, error: verifyError } = await supabase.auth.verifyOtp({
         phone: formattedPhone,
@@ -184,6 +199,7 @@ export function PhoneAuthModal({ isOpen, onClose, onSuccess, required = false }:
     setPhone("")
     setOtp("")
     setError(null)
+    setSentTo(null)
     onClose()
   }
 
@@ -229,9 +245,9 @@ export function PhoneAuthModal({ isOpen, onClose, onSuccess, required = false }:
                 <p className="text-sm text-muted-foreground mt-2">
                   {step === "name"
                     ? "Tell us your name to continue"
-                    : step === "phone"
+                  : step === "phone"
                       ? "Enter your phone number to continue"
-                      : `We sent a code to ${phone}`}
+                      : `We sent a code to ${sentTo ?? phone}`}
                 </p>
               </div>
 
@@ -334,6 +350,7 @@ export function PhoneAuthModal({ isOpen, onClose, onSuccess, required = false }:
                       setStep("phone")
                       setOtp("")
                       setError(null)
+                      setSentTo(null)
                     }}
                     className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
