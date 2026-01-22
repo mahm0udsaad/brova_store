@@ -5,7 +5,7 @@ import { useRouter, usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Loader2, Shield } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
-import { isAdminClient } from "@/lib/admin/is-admin"
+import { isAdminClient } from "@/lib/admin/is-admin.client"
 import { PhoneAuthModal } from "@/components/phone-auth-modal"
 
 interface AdminAuthWrapperProps {

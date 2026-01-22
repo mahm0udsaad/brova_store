@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { isAdmin } from "@/lib/admin/is-admin"
+import { isAdmin } from "@/lib/admin/is-admin.server"
 import { NextRequest, NextResponse } from "next/server"
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

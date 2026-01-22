@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { isAdmin } from "@/lib/admin/is-admin"
+import { isAdmin } from "@/lib/admin/is-admin.server"
 
 /**
  * API endpoint to add a new admin

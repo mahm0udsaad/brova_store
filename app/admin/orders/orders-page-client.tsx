@@ -24,6 +24,7 @@ import {
   Eye,
   History,
   Bell,
+  MessageSquare,
 } from "lucide-react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
@@ -176,6 +177,25 @@ export default function OrdersPageClient({ initialOrders }: OrdersPageClientProp
         action_data: { old_status: selectedOrder?.status, new_status: newStatus, comment },
       })
 
+      // Send SMS notification automatically
+      if (selectedOrder?.customer_phone) {
+        try {
+          await fetch("/api/admin/send-order-sms", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              orderId,
+              phone: selectedOrder.customer_phone,
+              status: newStatus,
+              trackingNumber: selectedOrder.tracking_number,
+            }),
+          })
+        } catch (smsError) {
+          console.error("Error sending SMS notification:", smsError)
+          // Don't fail the status update if SMS fails
+        }
+      }
+
       triggerHaptic("success")
     } catch (error) {
       console.error("Error updating order:", error)
@@ -236,6 +256,37 @@ export default function OrdersPageClient({ initialOrders }: OrdersPageClientProp
     window.location.href = `mailto:${email}`
   }
 
+  const handleSMS = async (phone: string, orderNumber: string, status: string) => {
+    triggerHaptic("medium")
+    
+    try {
+      const response = await fetch("/api/admin/send-order-sms", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId: selectedOrder?.id,
+          phone,
+          status,
+          trackingNumber: selectedOrder?.tracking_number,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        triggerHaptic("success")
+        alert("SMS sent successfully!")
+      } else {
+        triggerHaptic("error")
+        alert(`Failed to send SMS: ${data.error}`)
+      }
+    } catch (error) {
+      console.error("Error sending SMS:", error)
+      triggerHaptic("error")
+      alert("Failed to send SMS. Please try again.")
+    }
+  }
+
   if (selectedOrder) {
     return <OrderDetailsView 
       order={selectedOrder}
@@ -244,6 +295,7 @@ export default function OrdersPageClient({ initialOrders }: OrdersPageClientProp
       onWhatsApp={handleWhatsAppMessage}
       onCall={handleCall}
       onEmail={handleEmail}
+      onSMS={handleSMS}
       isUpdating={isUpdating}
       userActivity={userActivity}
     />
@@ -428,7 +480,7 @@ function OrderCard({ order, index, onClick }: any) {
   )
 }
 
-function OrderDetailsView({ order, onBack, onStatusUpdate, onWhatsApp, onCall, onEmail, isUpdating, userActivity }: any) {
+function OrderDetailsView({ order, onBack, onStatusUpdate, onWhatsApp, onCall, onEmail, onSMS, isUpdating, userActivity }: any) {
   const [newStatus, setNewStatus] = useState(order.status)
   const [comment, setComment] = useState("")
   const [showHistory, setShowHistory] = useState(false)
@@ -529,7 +581,7 @@ function OrderDetailsView({ order, onBack, onStatusUpdate, onWhatsApp, onCall, o
           className="bg-card border rounded-2xl p-6"
         >
           <h3 className="font-semibold mb-4">Contact Customer</h3>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             <Button
               variant="outline"
               className="flex-col h-auto py-4 rounded-xl"
@@ -542,9 +594,18 @@ function OrderDetailsView({ order, onBack, onStatusUpdate, onWhatsApp, onCall, o
             <Button
               variant="outline"
               className="flex-col h-auto py-4 rounded-xl"
+              onClick={() => onSMS(order.customer_phone, order.order_number, order.status)}
+            >
+              <MessageSquare className="w-6 h-6 mb-2 text-blue-500" />
+              <span className="text-xs">SMS</span>
+            </Button>
+            
+            <Button
+              variant="outline"
+              className="flex-col h-auto py-4 rounded-xl"
               onClick={() => onCall(order.customer_phone)}
             >
-              <Phone className="w-6 h-6 mb-2 text-blue-500" />
+              <Phone className="w-6 h-6 mb-2 text-indigo-500" />
               <span className="text-xs">Call</span>
             </Button>
             
