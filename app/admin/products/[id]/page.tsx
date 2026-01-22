@@ -1,7 +1,5 @@
-import { notFound, redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
+import { notFound } from "next/navigation"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { isAdmin } from "@/lib/admin/is-admin"
 import ProductEditor from "./product-editor"
 
 type AdminProduct = {
@@ -21,15 +19,6 @@ type Props = {
 
 export default async function AdminProductPage({ params }: Props) {
   const { id } = await params
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!isAdmin(user)) {
-    redirect("/")
-  }
-
   const admin = createAdminClient()
   const { data } = await admin
     .from("products")

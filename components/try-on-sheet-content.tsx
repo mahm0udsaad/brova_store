@@ -90,7 +90,11 @@ export function TryOnSheetContent({ productImage, productName, productImageFile,
 
   const handleUploadClick = useCallback(() => {
     triggerHaptic("light")
-    fileInputRef.current?.click()
+    // iOS Safari fix: ensure the input is focused before clicking
+    if (fileInputRef.current) {
+      fileInputRef.current.focus()
+      fileInputRef.current.click()
+    }
   }, [])
 
   const handleTryOn = useCallback(async () => {
@@ -279,18 +283,19 @@ export function TryOnSheetContent({ productImage, productName, productImageFile,
 
             <input
               ref={fileInputRef}
+              id="try-on-sheet-file-input"
               type="file"
-              accept="image/*"
-              capture="user"
+              accept="image/jpeg,image/jpg,image/png,image/webp"
               onChange={handleFileSelect}
               className="hidden"
+              multiple={false}
             />
 
             {!uploadedImage ? (
-              <motion.div
-                className="border-2 border-dashed border-border rounded-2xl flex-1 flex flex-col items-center justify-center gap-4 bg-muted/30 min-h-[200px]"
+              <motion.label
+                htmlFor="try-on-sheet-file-input"
+                className="border-2 border-dashed border-border rounded-2xl flex-1 flex flex-col items-center justify-center gap-4 bg-muted/30 min-h-[200px] cursor-pointer touch-manipulation"
                 whileTap={{ scale: 0.98 }}
-                onClick={handleUploadClick}
               >
                 <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
                   <ImageIcon className="w-8 h-8 text-muted-foreground" />
@@ -299,7 +304,7 @@ export function TryOnSheetContent({ productImage, productName, productImageFile,
                   <p className="font-medium">Tap to upload a photo</p>
                   <p className="text-sm text-muted-foreground">or take a new one</p>
                 </div>
-              </motion.div>
+              </motion.label>
             ) : (
               <div className="space-y-4 flex-1 flex flex-col min-h-0">
                 <div className="relative flex-1 w-full rounded-2xl overflow-hidden bg-black/5 min-h-[300px]">

@@ -13,7 +13,8 @@ import { Header } from "@/components/header"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useCart } from "@/hooks/use-cart"
 import { triggerHaptic } from "@/lib/haptics"
-import { OnboardingWizard } from "@/components/onboarding-wizard"
+// import { OnboardingWizard } from "@/components/onboarding-wizard" // Commented out for now
+import { NotificationPermissionModal } from "@/components/notification-permission-modal"
 import { useModalStack } from "@/components/modal-stack/modal-stack-context"
 import type { Product } from "@/types"
 
@@ -244,7 +245,8 @@ export default function HomePageClient({ products: initialProducts }: HomePageCl
 
         <BottomNav cartCount={itemCount} />
 
-        <OnboardingWizard />
+        {/* <OnboardingWizard /> */}
+        <NotificationPermissionModal />
       </div>
     </LayoutGroup>
   )

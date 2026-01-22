@@ -1,7 +1,4 @@
-import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
-import { isAdmin } from "@/lib/admin/is-admin"
 import InventoryPageClient from "./inventory-page-client"
 
 type AdminProductRow = {
@@ -15,15 +12,6 @@ type AdminProductRow = {
 }
 
 export default async function AdminInventoryPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!isAdmin(user)) {
-    redirect("/")
-  }
-
   const admin = createAdminClient()
   const { data: products } = await admin
     .from("products")

@@ -1,6 +1,6 @@
 "use client"
 
-import { Search, ShoppingBag, Settings, Sparkles, HomeIcon, Home } from "lucide-react"
+import { Search, ShoppingBag, Settings, Sparkles, HomeIcon, Home, Package } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
@@ -50,7 +50,7 @@ export function BottomNav({ cartCount = 0 }: BottomNavProps) {
     { href: "/search", icon: Search, label: "Search" },
     { href: "/editor", icon: BrovaIcon, label: "Design", isMain: true },
     { href: "/cart", icon: ShoppingBag, label: "Cart", badge: cartCount },
-    { href: "/settings", icon: Settings, label: "Settings" },
+    { href: "/orders", icon: Package, label: "Orders" },
   ]
 
   const handleNavClick = () => {
