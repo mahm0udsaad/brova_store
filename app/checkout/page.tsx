@@ -34,6 +34,7 @@ export default function CheckoutPage() {
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [addressError, setAddressError] = useState<string | null>(null)
   const [forceExpandAddress, setForceExpandAddress] = useState(false)
+  const [orderError, setOrderError] = useState<string | null>(null)
 
   useEffect(() => {
     const savedProfile = getUserProfile()
@@ -74,6 +75,7 @@ export default function CheckoutPage() {
       return
     }
 
+    setOrderError(null)
     const nextAddressError = !isAddressValid ? "Please enter your full delivery address" : null
     setAddressError(nextAddressError)
     setForceExpandAddress(!!nextAddressError)
@@ -110,6 +112,27 @@ export default function CheckoutPage() {
       shippingFee,
       total,
       createdAt: new Date().toISOString(),
+    }
+
+    const orderResponse = await fetch("/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        items: cart,
+        address,
+        phone: formattedPhone,
+        fullName,
+        subtotal,
+        shippingFee,
+        total,
+      }),
+    })
+
+    if (!orderResponse.ok) {
+      const errorData = await orderResponse.json().catch(() => null)
+      setOrderError(errorData?.error || "Failed to place your order. Please try again.")
+      setIsProcessing(false)
+      return
     }
 
     saveOrder(order)
@@ -356,6 +379,16 @@ export default function CheckoutPage() {
                   : !isAddressValid
                     ? "Please enter your full delivery address"
                     : "Please fill in all required fields"}
+              </motion.p>
+            )}
+
+            {orderError && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-xs text-red-500 text-center mt-3"
+              >
+                {orderError}
               </motion.p>
             )}
           </motion.div>

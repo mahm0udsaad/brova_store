@@ -5,6 +5,7 @@ import {
   generateWithRetry,
   resolveProductUrl,
 } from "@/lib/nanobanana";
+import { createClient } from "@/lib/supabase/server";
 
 // Generate virtual try-on with retry logic
 async function generateTryOnWithRetry(
@@ -30,11 +31,21 @@ async function generateTryOnWithRetry(
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
     // Parse form data
     const formData = await request.formData();
     const userImageFile = formData.get("userImage") as File | null;
     const productImageUrl = formData.get("productImageUrl") as string | null;
     const productImageFile = formData.get("productImageFile") as File | null;
+    const productId = (formData.get("productId") as string | null) || "custom";
 
     // Validate inputs
     if (!userImageFile) {
@@ -61,6 +72,8 @@ export async function POST(request: NextRequest) {
     }
 
     let finalProductImageUrl: string;
+    let spendHistoryId: string | null = null;
+    let newCredits: number | null = null;
 
     if (productImageFile) {
       // Validate product image file if provided
@@ -87,18 +100,47 @@ export async function POST(request: NextRequest) {
       finalProductImageUrl = resolveProductUrl(productImageUrl!);
     }
 
-    // Generate try-on result with retry logic
-    const resultImageUrl = await generateTryOnWithRetry(
-      userImageFile,
-      finalProductImageUrl
-    );
-
-    // Return the result image URL
-    return NextResponse.json({
-      success: true,
-      message: "Try-on generated successfully",
-      resultImage: resultImageUrl,
+    const { data: spendData, error: spendError } = await supabase.rpc("spend_try_on_credit", {
+      p_product_id: productId,
     });
+
+    if (spendError) {
+      const message = spendError.message || "Unable to spend credit";
+      const status = message.toLowerCase().includes("credit") ? 402 : 400;
+      return NextResponse.json({ error: message }, { status });
+    }
+
+    const spendRow = Array.isArray(spendData) ? spendData[0] : spendData;
+    spendHistoryId = spendRow?.history_id ?? null;
+    newCredits = typeof spendRow?.new_credits === "number" ? spendRow.new_credits : null;
+
+    try {
+      // Generate try-on result with retry logic
+      const resultImageUrl = await generateTryOnWithRetry(
+        userImageFile,
+        finalProductImageUrl
+      );
+
+      if (spendHistoryId) {
+        await supabase
+          .from("try_on_history")
+          .update({ image_url: resultImageUrl })
+          .eq("id", spendHistoryId);
+      }
+
+      // Return the result image URL
+      return NextResponse.json({
+        success: true,
+        message: "Try-on generated successfully",
+        resultImage: resultImageUrl,
+        newCredits,
+      });
+    } catch (error: any) {
+      if (spendHistoryId) {
+        await supabase.rpc("refund_try_on_credit", { p_history_id: spendHistoryId });
+      }
+      throw error;
+    }
   } catch (error: any) {
     console.error("Try-on API error:", error);
 

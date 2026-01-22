@@ -2,27 +2,57 @@
 
 import type React from "react"
 
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { motion } from "framer-motion"
 import Image from "next/image"
 import { X, Camera, Upload, ImageIcon, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { triggerHaptic, playSuccessSound } from "@/lib/haptics"
 import { useModalStack } from "./modal-stack/modal-stack-context"
+import { createClient } from "@/lib/supabase/client"
 
 interface TryOnSheetContentProps {
   productImage: string
   productName: string
   productImageFile?: File | null
+  productId?: string
 }
 
-export function TryOnSheetContent({ productImage, productName, productImageFile }: TryOnSheetContentProps) {
+export function TryOnSheetContent({ productImage, productName, productImageFile, productId }: TryOnSheetContentProps) {
   const { dismiss } = useModalStack()
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [tryOnResult, setTryOnResult] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [credits, setCredits] = useState<number | null>(null)
+  const [showCreditsUpsell, setShowCreditsUpsell] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const loadCredits = async () => {
+      const supabase = createClient()
+      const { data: authData } = await supabase.auth.getUser()
+      if (!authData.user) {
+        setIsAuthenticated(false)
+        setCredits(0)
+        return
+      }
+      setIsAuthenticated(true)
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("try_on_credits")
+        .eq("id", authData.user.id)
+        .single()
+      if (error) {
+        setCredits(0)
+        return
+      }
+      setCredits(data?.try_on_credits ?? 0)
+    }
+
+    loadCredits()
+  }, [])
 
   const handleClose = useCallback(() => {
     triggerHaptic("light")
@@ -65,12 +95,27 @@ export function TryOnSheetContent({ productImage, productName, productImageFile 
 
   const handleTryOn = useCallback(async () => {
     if (!uploadedImage) return
+    if (!isAuthenticated) {
+      setErrorMessage("Please sign in to use Try-On.")
+      return
+    }
+
+    if (credits !== null && credits <= 0) {
+      setShowCreditsUpsell(true)
+      return
+    }
+
+    const previousCredits = credits
 
     triggerHaptic("medium")
     setIsProcessing(true)
     setErrorMessage(null)
 
     try {
+      if (typeof previousCredits === "number") {
+        setCredits(Math.max(0, previousCredits - 1))
+      }
+
       // Convert base64 data URL to File object
       const response = await fetch(uploadedImage)
       const blob = await response.blob()
@@ -84,6 +129,9 @@ export function TryOnSheetContent({ productImage, productName, productImageFile 
         formData.append("productImageFile", productImageFile)
       } else {
         formData.append("productImageUrl", productImage)
+      }
+      if (productId) {
+        formData.append("productId", productId)
       }
 
       // Call the try-on API
@@ -100,24 +148,33 @@ export function TryOnSheetContent({ productImage, productName, productImageFile 
 
       // Set the result image
       setTryOnResult(data.resultImage)
+      if (typeof data.newCredits === "number") {
+        setCredits(data.newCredits)
+      }
       triggerHaptic("success")
       playSuccessSound()
     } catch (error: any) {
       console.error("Try-on error:", error)
       triggerHaptic("heavy")
+      if (typeof previousCredits === "number") {
+        setCredits(previousCredits)
+      }
       
       // Set user-friendly error message
       if (error.message.includes("Rate limit")) {
         setErrorMessage("Too many requests. Please try again in a few moments.")
       } else if (error.message.includes("Service")) {
         setErrorMessage("Service temporarily unavailable. Please try again.")
+      } else if (error.message.toLowerCase().includes("credits")) {
+        setShowCreditsUpsell(true)
+        setErrorMessage(null)
       } else {
         setErrorMessage("Failed to generate try-on. Please try again.")
       }
     } finally {
       setIsProcessing(false)
     }
-  }, [uploadedImage, productImage, productImageFile])
+  }, [uploadedImage, productImage, productImageFile, productId, credits, isAuthenticated])
 
   return (
     <div className="flex flex-col h-full min-h-[60vh]">
@@ -132,6 +189,11 @@ export function TryOnSheetContent({ productImage, productName, productImageFile 
             <p className="text-xs text-muted-foreground">See how it looks on you</p>
           </div>
         </div>
+        {typeof credits === "number" && (
+          <div className="text-xs font-semibold px-3 py-1 rounded-full bg-muted text-muted-foreground">
+            Credits: {credits}
+          </div>
+        )}
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={handleClose}
@@ -160,6 +222,25 @@ export function TryOnSheetContent({ productImage, productName, productImageFile 
         {errorMessage && (
           <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-xl shrink-0">
             <p className="text-sm text-destructive">{errorMessage}</p>
+          </div>
+        )}
+
+        {showCreditsUpsell && (
+          <div className="mb-4 p-4 rounded-2xl border border-primary/20 bg-primary/5 text-center">
+            <p className="text-sm font-semibold">No Try-On credits left</p>
+            <p className="text-xs text-muted-foreground mt-1">Complete a purchase to earn more credits.</p>
+            <div className="flex gap-2 justify-center mt-3">
+              <Button
+                variant="outline"
+                className="rounded-xl h-10"
+                onClick={() => setShowCreditsUpsell(false)}
+              >
+                Not now
+              </Button>
+              <Button className="rounded-xl h-10" onClick={() => (window.location.href = "/cart")}>
+                Get More Credits
+              </Button>
+            </div>
           </div>
         )}
 

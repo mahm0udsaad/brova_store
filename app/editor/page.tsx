@@ -911,6 +911,7 @@ function EditorPageInner() {
           productImage=""
           productName={`Your Custom ${selectedColor?.name || "Hoodie"} Design`}
           productImageFile={file}
+          productId="custom"
         />
       )
     } catch (error) {

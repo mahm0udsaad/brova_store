@@ -22,6 +22,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const { addToCart } = useCart()
   const [isFav, setIsFav] = useState(false)
   const [showAdded, setShowAdded] = useState(false)
+  const isPurchasable = typeof product.price === "number" && product.price > 0
 
   useEffect(() => {
     setIsFav(isFavorite(product.id))
@@ -41,6 +42,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    if (!isPurchasable) return
     triggerHaptic("medium")
 
     if (product.sizes && product.sizes.length > 0) {
@@ -101,8 +103,12 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={handleAddToCart}
-              className="w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md bg-white/20 text-white border border-white/20 transition-all hover:bg-white/30"
+              className={cn(
+                "w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 transition-all",
+                isPurchasable ? "bg-white/20 text-white hover:bg-white/30" : "bg-white/10 text-white/50",
+              )}
               aria-label="Add to cart"
+              aria-disabled={!isPurchasable}
             >
               {showAdded ? (
                 <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-green-400">
@@ -122,7 +128,11 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
           transition={{ delay: index * 0.05 + 0.2 }}
           layoutId={`product-info-${product.id}`}
         >
-          <p className="text-lg font-semibold text-foreground">EGP {product.price.toLocaleString()}</p>
+          {isPurchasable ? (
+            <p className="text-lg font-semibold text-foreground">EGP {product.price?.toLocaleString()}</p>
+          ) : (
+            <p className="text-sm font-semibold text-muted-foreground">Pricing soon</p>
+          )}
           <p className="text-sm text-muted-foreground line-clamp-1">{product.name}</p>
         </motion.div>
       </Link>

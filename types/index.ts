@@ -1,8 +1,8 @@
 export interface Product {
   id: string
   name: string
-  price: number
-  category: "hoodies" | "joggers" | "shorts" | "t-shirts" | "accessories"
+  price: number | null
+  category: string
   gender: "men" | "women" | "unisex"
   sizes: string[]
   image: string

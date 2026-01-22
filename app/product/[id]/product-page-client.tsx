@@ -9,43 +9,38 @@ import { ProductImageSlider } from "@/components/product-image-slider"
 import { TryOnSheetContent } from "@/components/try-on-sheet-content"
 import { useModalStack } from "@/components/modal-stack/modal-stack-context"
 import { Button } from "@/components/ui/button"
-import { products } from "@/lib/products"
 import { useCart } from "@/hooks/use-cart"
+import { useAuth } from "@/hooks/use-auth"
+import { PhoneAuthModal } from "@/components/phone-auth-modal"
 import { triggerHaptic, playSuccessSound } from "@/lib/haptics"
 import { toggleFavorite, isFavorite } from "@/lib/favorites"
 import { cn } from "@/lib/utils"
 import { Check, ShoppingBag, Heart, Share2 } from "lucide-react"
+import type { Product } from "@/types"
 
 interface ProductPageClientProps {
-  productId: string
+  product: Product
 }
 
-export default function ProductPageClient({ productId }: ProductPageClientProps) {
+export default function ProductPageClient({ product }: ProductPageClientProps) {
   const router = useRouter()
-  const product = products.find((p) => p.id === productId)
   const { addToCart, itemCount } = useCart()
   const { present } = useModalStack()
+  const { isAuthenticated, isLoading: authLoading } = useAuth()
   const [selectedSize, setSelectedSize] = useState<string | null>(null)
   const [isAdding, setIsAdding] = useState(false)
   const [showAdded, setShowAdded] = useState(false)
   const [isFav, setIsFav] = useState(false)
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [pendingTryOn, setPendingTryOn] = useState(false)
 
   useEffect(() => {
-    if (product) {
-      setIsFav(isFavorite(product.id))
-    }
+    setIsFav(isFavorite(product.id))
     window.scrollTo(0, 0)
   }, [product])
 
-  if (!product) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Product not found</p>
-      </div>
-    )
-  }
-
   const productImages = product.images && product.images.length > 0 ? product.images : [product.image]
+  const isPurchasable = typeof product.price === "number" && product.price > 0
 
   const handleSizeSelect = (size: string) => {
     triggerHaptic("light")
@@ -53,7 +48,7 @@ export default function ProductPageClient({ productId }: ProductPageClientProps)
   }
 
   const handleAddToCart = () => {
-    if (!selectedSize) return
+    if (!selectedSize || !isPurchasable) return
 
     setIsAdding(true)
     triggerHaptic("medium")
@@ -73,10 +68,16 @@ export default function ProductPageClient({ productId }: ProductPageClientProps)
   }
 
   const handleTryOn = () => {
+    if (!isAuthenticated && !authLoading) {
+      setPendingTryOn(true)
+      setShowAuthModal(true)
+      return
+    }
     present(
       <TryOnSheetContent 
         productImage={productImages[0]}
         productName={product.name}
+        productId={product.id}
       />
     )
   }
@@ -86,7 +87,9 @@ export default function ProductPageClient({ productId }: ProductPageClientProps)
 
     const shareData = {
       title: product.name,
-      text: `Check out ${product.name} at Brova - EGP ${product.price.toLocaleString()}`,
+      text: isPurchasable
+        ? `Check out ${product.name} at Brova - EGP ${product.price?.toLocaleString()}`
+        : `Check out ${product.name} at Brova`,
       url: window.location.href,
     }
 
@@ -212,7 +215,7 @@ export default function ProductPageClient({ productId }: ProductPageClientProps)
                 ))}
               </div>
               <AnimatePresence>
-                {!selectedSize && (
+                {!selectedSize && product.sizes.length > 0 && (
                   <motion.p
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
@@ -232,14 +235,18 @@ export default function ProductPageClient({ productId }: ProductPageClientProps)
               transition={{ delay: 0.4 }}
             >
               <div className="flex-1">
-                <p className="text-3xl md:text-4xl font-bold">EGP {product.price.toLocaleString()}</p>
+                {isPurchasable ? (
+                  <p className="text-3xl md:text-4xl font-bold">EGP {product.price?.toLocaleString()}</p>
+                ) : (
+                  <p className="text-lg md:text-xl font-semibold text-muted-foreground">Pricing soon</p>
+                )}
               </div>
 
               <motion.div className="flex-1" whileTap={{ scale: 0.98 }}>
                 <Button
                   size="lg"
                   className="w-full rounded-2xl h-16 text-base font-semibold relative overflow-hidden"
-                  disabled={!selectedSize || isAdding}
+                  disabled={!selectedSize || isAdding || !isPurchasable}
                   onClick={handleAddToCart}
                 >
                   <AnimatePresence mode="wait">
@@ -289,6 +296,23 @@ export default function ProductPageClient({ productId }: ProductPageClientProps)
 
         <BottomNav cartCount={itemCount} />
       </motion.div>
+      <PhoneAuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={() => {
+          setShowAuthModal(false)
+          if (pendingTryOn) {
+            setPendingTryOn(false)
+            present(
+              <TryOnSheetContent 
+                productImage={productImages[0]}
+                productName={product.name}
+                productId={product.id}
+              />
+            )
+          }
+        }}
+      />
     </LayoutGroup>
   )
 }

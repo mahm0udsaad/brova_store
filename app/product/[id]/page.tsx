@@ -1,6 +1,7 @@
-import { products } from "@/lib/products"
 import type { Metadata } from "next"
+import { notFound } from "next/navigation"
 import ProductPageClient from "./product-page-client"
+import { getStorefrontProductById } from "@/lib/supabase/queries/products"
 
 type Props = {
   params: Promise<{ id: string }>
@@ -8,7 +9,7 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
-  const product = products.find((p) => p.id === id)
+  const { data: product } = await getStorefrontProductById(id)
 
   if (!product) {
     return {
@@ -50,18 +51,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export async function generateStaticParams() {
-  return products.map((product) => ({
-    id: product.id,
-  }))
-}
-
 export default async function ProductPage({ params }: Props) {
   const { id } = await params
-  const product = products.find((p) => p.id === id)
+  const { data: product } = await getStorefrontProductById(id)
 
   if (!product) {
-    return null
+    notFound()
   }
 
   const productImage = product.images && product.images.length > 0 ? product.images[0] : product.image
@@ -88,7 +83,7 @@ export default async function ProductPage({ params }: Props) {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <ProductPageClient productId={id} />
+      <ProductPageClient product={product} />
     </>
   )
 }

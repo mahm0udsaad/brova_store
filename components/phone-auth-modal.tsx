@@ -127,7 +127,7 @@ export function PhoneAuthModal({ isOpen, onClose, onSuccess, required = false }:
       const supabase = createClient()
       const formattedPhone = formatPhoneForSupabase(phone)
 
-      const { error: verifyError } = await supabase.auth.verifyOtp({
+      const { data, error: verifyError } = await supabase.auth.verifyOtp({
         phone: formattedPhone,
         token: otp,
         type: "sms",
@@ -137,6 +137,20 @@ export function PhoneAuthModal({ isOpen, onClose, onSuccess, required = false }:
         setError(verifyError.message)
         setOtp("") // Clear OTP on error
         return
+      }
+
+      // Save profile to Supabase
+      if (data?.user) {
+        const { error: profileError } = await supabase.from("profiles").upsert({
+          id: data.user.id,
+          full_name: fullName.trim(),
+          phone: formattedPhone,
+          updated_at: new Date().toISOString(),
+        })
+
+        if (profileError) {
+          console.error("Error saving profile:", profileError)
+        }
       }
 
       const existingProfile = getUserProfile()
@@ -182,7 +196,7 @@ export function PhoneAuthModal({ isOpen, onClose, onSuccess, required = false }:
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
             onClick={handleClose}
           />
 
@@ -192,7 +206,7 @@ export function PhoneAuthModal({ isOpen, onClose, onSuccess, required = false }:
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-50 max-w-md mx-auto"
+            className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-[60] max-w-md mx-auto"
           >
             <div className="bg-card rounded-3xl p-6 shadow-2xl border border-border/50">
               {/* Close Button */}
