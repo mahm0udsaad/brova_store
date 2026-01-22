@@ -7,6 +7,18 @@ import { createClient } from '@supabase/supabase-js'
 import * as fs from 'fs'
 import * as path from 'path'
 
+// Load .env.local if it exists
+const envPath = path.join(__dirname, '../.env.local')
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf-8')
+  for (const line of envContent.split('\n')) {
+    const [key, ...valueParts] = line.split('=')
+    if (key && valueParts.length > 0) {
+      process.env[key.trim()] = valueParts.join('=').trim()
+    }
+  }
+}
+
 // Supabase config
 const SUPABASE_URL = 'https://alpozkmftvqjqozkkoyz.supabase.co'
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
