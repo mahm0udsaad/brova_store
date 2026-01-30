@@ -1,0 +1,7 @@
+export { AISidebar } from "./ai-sidebar"
+export { AISidebarProvider, useAISidebar } from "./ai-sidebar-provider"
+export { AIConversation } from "./ai-conversation"
+export { AIInputArea } from "./ai-input-area"
+export { AIThinkingIndicator } from "./ai-thinking"
+export { AIConfirmation } from "./ai-confirmation"
+export type { Message, StepUpdate } from "./ai-sidebar"

@@ -1,0 +1,26 @@
+export const home = {
+  filters: "Filter categories",
+  toggleView: "Toggle category view",
+  hero: {
+    kicker: "Be Different",
+    title: "Popular Products",
+    subtitle: "Never miss out on a hot release again with our latest drops newsletter.",
+  },
+  loadingMore: "Loading more...",
+  endOfList: "You've seen all products",
+  emptyState: "No products found in this category.",
+  categories: {
+    title: "Categories",
+    close: "Close",
+    selected: "Selected",
+    all: "All",
+    shopAll: "Shop everything",
+    items: "{count} items",
+    hoodies: "Hoodies",
+    joggers: "Joggers",
+    shorts: "Shorts",
+    tShirts: "T-Shirts",
+    "t-shirts": "T-Shirts",
+    accessories: "Accessories",
+  },
+}

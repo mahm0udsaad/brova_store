@@ -13,6 +13,7 @@ import { useCart } from "@/hooks/use-cart"
 import { cn } from "@/lib/utils"
 import { blurPlaceholders } from "@/lib/image-utils"
 import type { Product } from "@/types"
+import { useLocale, useTranslations } from "next-intl"
 
 interface ProductCardProps {
   product: Product
@@ -20,10 +21,17 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, index = 0 }: ProductCardProps) {
+  const locale = useLocale()
+  const t = useTranslations("product")
   const { addToCart } = useCart()
   const [isFav, setIsFav] = useState(false)
   const [showAdded, setShowAdded] = useState(false)
   const isPurchasable = typeof product.price === "number" && product.price > 0
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-EG", {
+      style: "currency",
+      currency: "EGP",
+    }).format(value)
 
   useEffect(() => {
     setIsFav(isFavorite(product.id))
@@ -91,7 +99,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
             placeholder="blur"
             blurDataURL={blurPlaceholders.product}
           />
-          <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
+          <div className="absolute top-3 ltr:left-3 rtl:right-3 flex flex-col gap-2 z-10">
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={handleFavoriteToggle}
@@ -101,7 +109,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
                   ? "bg-red-500/30 text-red-500 border border-red-500/30"
                   : "bg-white/20 text-white border border-white/20",
               )}
-              aria-label={isFav ? "Remove from favorites" : "Add to favorites"}
+              aria-label={isFav ? t("removeFavorite") : t("addFavorite")}
             >
               <Heart className={cn("w-5 h-5", isFav && "fill-current")} />
             </motion.button>
@@ -113,7 +121,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
                 "w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 transition-all",
                 isPurchasable ? "bg-white/20 text-white hover:bg-white/30" : "bg-white/10 text-white/50",
               )}
-              aria-label="Add to cart"
+              aria-label={t("addToCart")}
               aria-disabled={!isPurchasable}
             >
               {showAdded ? (
@@ -135,9 +143,9 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
           layoutId={`product-info-${product.id}`}
         >
           {isPurchasable ? (
-            <p className="text-lg font-semibold text-foreground">EGP {product.price?.toLocaleString()}</p>
+            <p className="text-lg font-semibold text-foreground">{formatCurrency(product.price!)}</p>
           ) : (
-            <p className="text-sm font-semibold text-muted-foreground">Pricing soon</p>
+            <p className="text-sm font-semibold text-muted-foreground">{t("pricingSoon")}</p>
           )}
           <p className="text-sm text-muted-foreground line-clamp-1">{product.name}</p>
         </motion.div>

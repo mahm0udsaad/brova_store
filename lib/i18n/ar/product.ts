@@ -1,0 +1,18 @@
+export const product = {
+  imageCounter: "{current} / {total}",
+  fullscreen: "ملء الشاشة",
+  previousImage: "الصورة السابقة",
+  nextImage: "الصورة التالية",
+  zoomIn: "تكبير",
+  zoomOut: "تصغير",
+  share: "مشاركة",
+  shareText: "شاهد {productName}",
+  thumbnailAlt: "مصغرة {index}",
+  goToImage: "اذهب إلى الصورة {index}",
+  closeFullscreen: "إغلاق ملء الشاشة",
+  tryOnWithAi: "جرّبه بالذكاء الاصطناعي",
+  addFavorite: "أضف إلى المفضلة",
+  removeFavorite: "إزالة من المفضلة",
+  addToCart: "أضف إلى السلة",
+  pricingSoon: "السعر قريبًا",
+}

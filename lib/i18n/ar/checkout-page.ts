@@ -1,0 +1,21 @@
+export const checkoutPage = {
+  title: "إتمام الشراء",
+  signInCta: "سجّل الدخول لإتمام أسرع",
+  signInButton: "تسجيل الدخول",
+  deliveryDetails: "تفاصيل التوصيل",
+  paymentTitle: "الدفع عند الاستلام",
+  paymentSubtitle: "ادفع عند استلام الطلب. التوصيل خلال 1-3 أيام عمل.",
+  orderSummary: "ملخص الطلب",
+  sizeQuantity: "المقاس: {size} × {count}",
+  subtotal: "المجموع الفرعي",
+  shipping: "الشحن",
+  total: "الإجمالي",
+  processing: "جاري المعالجة...",
+  placeOrder: "إتمام الطلب - {total}",
+  errors: {
+    signInRequired: "يرجى تسجيل الدخول للمتابعة",
+    addressRequired: "يرجى إدخال عنوان التوصيل بالكامل",
+    requiredFields: "يرجى تعبئة جميع الحقول المطلوبة",
+    orderFailed: "تعذر إتمام الطلب. حاول مرة أخرى.",
+  },
+}

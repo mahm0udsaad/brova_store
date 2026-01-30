@@ -5,6 +5,8 @@ import { motion } from "framer-motion"
 import { triggerHaptic } from "@/lib/haptics"
 import { categoryData } from "@/lib/products"
 import { blurPlaceholders } from "@/lib/image-utils"
+import { useLocale, useTranslations } from "next-intl"
+import { cn } from "@/lib/utils"
 
 interface CategoryBentoGridProps {
   onCategorySelect: (category: string) => void
@@ -12,6 +14,10 @@ interface CategoryBentoGridProps {
 }
 
 export function CategoryBentoGrid({ onCategorySelect, activeCategory }: CategoryBentoGridProps) {
+  const locale = useLocale()
+  const t = useTranslations("home")
+  const isRtl = locale === "ar"
+
   const handleCategoryClick = (categoryId: string) => {
     triggerHaptic("light")
     // Convert to proper category format
@@ -35,8 +41,8 @@ export function CategoryBentoGrid({ onCategorySelect, activeCategory }: Category
         <div className="absolute inset-0 bg-gradient-to-br from-foreground/20 to-foreground/5" />
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <p className="text-2xl md:text-xl font-bold uppercase tracking-tight">All</p>
-            <p className="text-xs text-muted-foreground">Shop everything</p>
+            <p className="text-2xl md:text-xl font-bold uppercase tracking-tight">{t("categories.all")}</p>
+            <p className="text-xs text-muted-foreground">{t("categories.shopAll")}</p>
           </div>
         </div>
       </motion.button>
@@ -67,9 +73,9 @@ export function CategoryBentoGrid({ onCategorySelect, activeCategory }: Category
               blurDataURL={blurPlaceholders.square}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
-            <div className="absolute inset-x-0 bottom-0 p-3">
-              <p className="text-sm font-bold uppercase tracking-tight">{category.name}</p>
-              <p className="text-xs text-muted-foreground">{category.count} items</p>
+            <div className={cn("absolute inset-x-0 bottom-0 p-3", isRtl && "text-right")}>
+              <p className="text-sm font-bold uppercase tracking-tight">{t(`categories.${category.id}`)}</p>
+              <p className="text-xs text-muted-foreground">{t("categories.items", { count: category.count })}</p>
             </div>
           </motion.button>
         )

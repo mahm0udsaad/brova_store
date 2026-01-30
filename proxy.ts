@@ -1,10 +1,18 @@
-import { updateSession } from "@/lib/supabase/proxy"
-import type { NextRequest } from "next/server"
+import createMiddleware from 'next-intl/middleware'
+import { locales, defaultLocale } from './i18n'
 
-export async function proxy(request: NextRequest) {
-  return await updateSession(request)
-}
+export default createMiddleware({
+  // A list of all locales that are supported
+  locales,
+
+  // Used when no locale matches
+  defaultLocale,
+
+  // Always use locale prefix in URL
+  localePrefix: 'always',
+})
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  // Match all paths except Next.js internals, API routes, and static files
+  matcher: ["/((?!_next|api|favicon.ico|.*\\..*).*)"],
 }

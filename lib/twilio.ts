@@ -58,50 +58,62 @@ export async function sendSMS({ to, message, orderId, userId }: SendSMSParams) {
 
 /**
  * Send order confirmation SMS
+ *
+ * @param storeName - The name of the store (from store context)
+ * @param storeUrl - The storefront URL (optional, defaults to generic path)
  */
 export async function sendOrderConfirmationSMS(
   phone: string,
   orderNumber: string,
   customerName: string,
-  totalAmount: number
+  totalAmount: number,
+  storeName: string = "Your Store",
+  storeUrl?: string
 ) {
-  const message = `🎉 Order Confirmed!\n\nHi ${customerName},\n\nYour order ${orderNumber} has been confirmed!\nTotal: ${totalAmount} EGP\n\nTrack your order: https://brova.vercel.app/orders\n\n- Brova Team`
+  const trackingUrl = storeUrl ? `${storeUrl}/orders` : "/orders"
+  const message = `🎉 Order Confirmed!\n\nHi ${customerName},\n\nYour order ${orderNumber} has been confirmed!\nTotal: ${totalAmount} EGP\n\nTrack your order: ${trackingUrl}\n\n- ${storeName} Team`
 
   return await sendSMS({ to: phone, message })
 }
 
 /**
  * Send order status update SMS
+ *
+ * @param storeName - The name of the store (from store context)
+ * @param storeUrl - The storefront URL (optional, defaults to generic path)
  */
 export async function sendOrderStatusSMS(
   phone: string,
   orderNumber: string,
   status: string,
+  storeName: string = "Your Store",
+  storeUrl?: string,
   trackingNumber?: string
 ) {
+  const trackingUrl = storeUrl ? `${storeUrl}/orders` : "/orders"
   let message = ""
 
   switch (status) {
     case "confirmed":
-      message = `✅ Order ${orderNumber} confirmed!\n\nYour order is being processed and will be shipped soon.\n\nTrack: https://brova.vercel.app/orders`
+      message = `✅ Order ${orderNumber} confirmed!\n\nYour order is being processed and will be shipped soon.\n\nTrack: ${trackingUrl}`
       break
     case "processing":
-      message = `📦 Order ${orderNumber} is being prepared!\n\nWe're getting your items ready for shipment.\n\nTrack: https://brova.vercel.app/orders`
+      message = `📦 Order ${orderNumber} is being prepared!\n\nWe're getting your items ready for shipment.\n\nTrack: ${trackingUrl}`
       break
     case "shipped":
-      message = `🚚 Order ${orderNumber} has shipped!\n\n${trackingNumber ? `Tracking: ${trackingNumber}\n\n` : ""}Your order is on its way!\n\nTrack: https://brova.vercel.app/orders`
+      message = `🚚 Order ${orderNumber} has shipped!\n\n${trackingNumber ? `Tracking: ${trackingNumber}\n\n` : ""}Your order is on its way!\n\nTrack: ${trackingUrl}`
       break
     case "out_for_delivery":
-      message = `📍 Order ${orderNumber} is out for delivery!\n\nYour order will arrive today.\n\nTrack: https://brova.vercel.app/orders`
+      message = `📍 Order ${orderNumber} is out for delivery!\n\nYour order will arrive today.\n\nTrack: ${trackingUrl}`
       break
     case "delivered":
-      message = `✨ Order ${orderNumber} delivered!\n\nThank you for shopping with Brova!\n\nRate your experience: https://brova.vercel.app/orders`
+      message = `✨ Order ${orderNumber} delivered!\n\nThank you for shopping with ${storeName}!\n\nRate your experience: ${trackingUrl}`
       break
     case "cancelled":
-      message = `❌ Order ${orderNumber} cancelled\n\nYour order has been cancelled. If you have questions, please contact us.\n\n- Brova Team`
+      message = `❌ Order ${orderNumber} cancelled\n\nYour order has been cancelled. If you have questions, please contact us.\n\n- ${storeName} Team`
       break
     default:
-      message = `📦 Order ${orderNumber} update\n\nStatus: ${status}\n\nTrack: https://brova.vercel.app/orders`
+      message = `📦 Order ${orderNumber} update\n\nStatus: ${status}\n\nTrack: ${trackingUrl}`
   }
 
   return await sendSMS({ to: phone, message })
@@ -121,9 +133,12 @@ export async function sendCustomerSMS(
 
 /**
  * Send OTP/verification code
+ *
+ * @param storeName - The name of the store (optional, for branded OTP messages)
  */
-export async function sendOTPSMS(phone: string, code: string) {
-  const message = `Your Brova verification code is: ${code}\n\nThis code expires in 10 minutes.\n\nDon't share this code with anyone.`
+export async function sendOTPSMS(phone: string, code: string, storeName?: string) {
+  const brandText = storeName ? `Your ${storeName} verification code` : "Your verification code"
+  const message = `${brandText} is: ${code}\n\nThis code expires in 10 minutes.\n\nDon't share this code with anyone.`
 
   return await sendSMS({ to: phone, message })
 }

@@ -1,0 +1,295 @@
+/**
+ * Storefront Queries
+ *
+ * Public-facing queries for storefront rendering.
+ * Tenant-isolated, theme-driven, bilingual support.
+ *
+ * Core Principle: No hardcoded store logic. Store resolved via context.
+ */
+
+import { cache } from "react"
+import { createClient } from "@/lib/supabase/server"
+
+/**
+ * Storefront Product (from store_products table)
+ */
+export interface StorefrontProduct {
+  id: string
+  store_id: string
+  name: string
+  name_ar: string | null
+  price: number
+  currency: string
+  inventory: number
+  status: 'draft' | 'active'
+  slug: string
+  description: string | null
+  description_ar: string | null
+  category: string | null
+  category_ar: string | null
+  tags: string[]
+  image_url: string | null
+  images: string[]
+  created_at: string
+}
+
+/**
+ * Store Contact Info
+ */
+export interface StoreContact {
+  store_name: string | null
+  email: string | null
+  phone: string | null
+  address: string | null
+  country: string | null
+}
+
+/**
+ * Store Context (public info)
+ */
+export interface StorefrontContext {
+  store: {
+    id: string
+    name: string
+    slug: string
+    type: 'clothing' | 'car_care'
+    status: 'draft' | 'active' | 'suspended' | 'archived'
+    theme_id: string | null
+    default_locale: string | null
+  }
+  organization: {
+    id: string
+    slug: string
+  }
+  contact: StoreContact | null
+  primary_domain: string | null
+}
+
+/**
+ * Storefront Category (from store_categories table)
+ */
+export interface StorefrontCategory {
+  id: string
+  store_id: string
+  name: string
+  name_ar: string | null
+  slug: string
+  image_url: string | null
+  sort_order: number
+}
+
+/**
+ * Get storefront context by organization slug
+ *
+ * For V1: Resolves to the single store for the organization
+ * Future: Can support multi-store per organization
+ *
+ * Wrapped with React.cache() to deduplicate calls within a single server render.
+ *
+ * @param orgSlug - Organization slug (e.g., 'brova')
+ * @returns Storefront context or null if not found
+ */
+export const getStorefrontContext = cache(async (orgSlug: string): Promise<StorefrontContext | null> => {
+  const supabase = await createClient()
+
+  // Get organization
+  const { data: org, error: orgError } = await supabase
+    .from('organizations')
+    .select('id, slug')
+    .eq('slug', orgSlug)
+    .single()
+
+  if (orgError || !org) {
+    console.error('[getStorefrontContext] Organization not found:', orgSlug, orgError)
+    return null
+  }
+
+  // Get the organization's store
+  const { data: store, error: storeError } = await supabase
+    .from('stores')
+    .select('id, name, slug, store_type, status, theme_id, default_locale')
+    .eq('organization_id', org.id)
+    .single()
+
+  if (storeError || !store) {
+    console.error('[getStorefrontContext] Store not found for org:', orgSlug, storeError)
+    return null
+  }
+
+  // Get store contact
+  const { data: contact } = await supabase
+    .from('store_contact')
+    .select('store_name, email, phone, address, country')
+    .eq('store_id', store.id)
+    .single()
+
+  // Get primary domain
+  const { data: domain } = await supabase
+    .from('store_domains')
+    .select('domain')
+    .eq('store_id', store.id)
+    .eq('is_primary', true)
+    .single()
+
+  return {
+    store: {
+      id: store.id,
+      name: store.name,
+      slug: store.slug,
+      type: store.store_type as 'clothing' | 'car_care',
+      status: store.status as 'draft' | 'active' | 'suspended' | 'archived',
+      theme_id: store.theme_id,
+      default_locale: store.default_locale,
+    },
+    organization: {
+      id: org.id,
+      slug: org.slug,
+    },
+    contact: contact || null,
+    primary_domain: domain?.domain || null
+  }
+})
+
+/**
+ * Get active products for storefront
+ *
+ * Only returns products with status='active'
+ * Scoped to specific store_id (tenant isolation)
+ *
+ * @param storeId - Store UUID
+ * @param options - Query options
+ * @returns Array of active products
+ */
+export async function getStorefrontProducts(
+  storeId: string,
+  options?: {
+    category?: string
+    limit?: number
+    offset?: number
+  }
+): Promise<StorefrontProduct[]> {
+  const supabase = await createClient()
+
+  const { limit = 50, offset = 0, category } = options ?? {}
+
+  let query = supabase
+    .from('store_products')
+    .select('*')
+    .eq('store_id', storeId)
+    .eq('status', 'active') // Only active products visible publicly
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1)
+
+  // Filter by category if provided
+  if (category && category !== 'all') {
+    query = query.eq('category', category)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    console.error('[getStorefrontProducts] Query failed:', error)
+    return []
+  }
+
+  return (data || []) as StorefrontProduct[]
+}
+
+/**
+ * Get a single product by ID for storefront
+ *
+ * Verifies:
+ * - Product exists
+ * - Product belongs to the specified store
+ * - Product is active (not draft)
+ *
+ * @param productId - Product UUID
+ * @param storeId - Store UUID
+ * @returns Product or null
+ */
+export async function getStorefrontProduct(
+  productId: string,
+  storeId: string
+): Promise<StorefrontProduct | null> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('store_products')
+    .select('*')
+    .eq('id', productId)
+    .eq('store_id', storeId)
+    .eq('status', 'active') // Only active products
+    .single()
+
+  if (error || !data) {
+    console.error('[getStorefrontProduct] Product not found or not active:', productId, error)
+    return null
+  }
+
+  return data as StorefrontProduct
+}
+
+/**
+ * Get unique categories for a store's products
+ *
+ * Used for category filtering on storefront
+ * Only includes categories from active products
+ *
+ * @param storeId - Store UUID
+ * @param locale - 'en' or 'ar' for localized category names
+ * @returns Array of unique categories
+ */
+export async function getStorefrontCategories(
+  storeId: string,
+  locale: 'en' | 'ar' = 'en'
+): Promise<string[]> {
+  const supabase = await createClient()
+
+  const categoryField = locale === 'ar' ? 'category_ar' : 'category'
+
+  const { data, error } = await supabase
+    .from('store_products')
+    .select(categoryField)
+    .eq('store_id', storeId)
+    .eq('status', 'active')
+    .not(categoryField, 'is', null)
+
+  if (error || !data) {
+    console.error('[getStorefrontCategories] Query failed:', error)
+    return []
+  }
+
+  // Extract unique categories
+  const categories = new Set<string>()
+  data.forEach(row => {
+    const cat = row[categoryField]
+    if (cat) categories.add(cat)
+  })
+
+  return Array.from(categories).sort()
+}
+
+/**
+ * Get categories for storefront from store_categories table.
+ *
+ * Returns ordered categories; fallback logic should be handled by caller if empty.
+ */
+export async function getStorefrontCategoryEntities(
+  storeId: string
+): Promise<StorefrontCategory[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('store_categories')
+    .select('id, store_id, name, name_ar, slug, image_url, sort_order')
+    .eq('store_id', storeId)
+    .order('sort_order', { ascending: true })
+    .order('name', { ascending: true })
+
+  if (error || !data) {
+    console.error('[getStorefrontCategoryEntities] Query failed:', error)
+    return []
+  }
+
+  return (data || []) as StorefrontCategory[]
+}

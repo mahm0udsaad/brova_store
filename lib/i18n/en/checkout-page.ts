@@ -1,0 +1,21 @@
+export const checkoutPage = {
+  title: "Checkout",
+  signInCta: "Sign in for faster checkout",
+  signInButton: "Sign In",
+  deliveryDetails: "Delivery Details",
+  paymentTitle: "Cash on Delivery",
+  paymentSubtitle: "Pay when you receive your order. Delivery in 1-3 working days.",
+  orderSummary: "Order Summary",
+  sizeQuantity: "Size: {size} × {count}",
+  subtotal: "Subtotal",
+  shipping: "Shipping",
+  total: "Total",
+  processing: "Processing...",
+  placeOrder: "Place Order - {total}",
+  errors: {
+    signInRequired: "Please sign in to continue checkout",
+    addressRequired: "Please enter your full delivery address",
+    requiredFields: "Please fill in all required fields",
+    orderFailed: "Failed to place your order. Please try again.",
+  },
+}

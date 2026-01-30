@@ -27,22 +27,17 @@ export async function POST(request: Request) {
 
     // Get the user ID to add as admin from request body
     const body = await request.json()
-    const { userId, email, phone, notes } = body
+    const { userId } = body
 
     if (!userId) {
       return NextResponse.json({ error: "userId is required" }, { status: 400 })
     }
 
-    // Add the user to the admins table
+    // Update the user's profile to set is_admin = true
     const { data, error } = await supabase
-      .from("admins")
-      .insert({
-        id: userId,
-        email: email || null,
-        phone: phone || null,
-        created_by: user.id,
-        notes: notes || null,
-      })
+      .from("profiles")
+      .update({ is_admin: true })
+      .eq("id", userId)
       .select()
       .single()
 

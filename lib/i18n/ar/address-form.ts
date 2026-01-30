@@ -1,0 +1,23 @@
+export const addressForm = {
+  fullName: "الاسم الكامل",
+  fullNamePlaceholder: "اسمك الكامل",
+  phoneNumber: "رقم الهاتف",
+  phonePlaceholder: "1XX XXX XXXX",
+  verified: "تم التحقق",
+  deliveryAddress: "عنوان التوصيل",
+  deliveryAreas: "القاهرة والجيزة فقط",
+  gettingLocation: "جاري تحديد الموقع...",
+  useCurrentLocation: "استخدم الموقع الحالي",
+  enterManually: "أو أدخل العنوان يدويًا",
+  manualPlaceholder: "رقم المبنى، اسم الشارع، المنطقة، المدينة (القاهرة/الجيزة)، معلم مميز (اختياري)",
+  example: "مثال: 15 شارع التحرير، الدقي، الجيزة، بجوار محطة المترو",
+  errors: {
+    geoUnsupported: "خدمة تحديد الموقع غير مدعومة في متصفحك",
+    deliveryArea: "عذرًا، التوصيل متاح في القاهرة والجيزة فقط",
+    addressFetchFailed: "تعذر الحصول على العنوان. يرجى إدخاله يدويًا.",
+    permissionDenied: "تم رفض إذن الموقع. يرجى إدخال العنوان يدويًا.",
+    positionUnavailable: "الموقع غير متاح. يرجى إدخال العنوان يدويًا.",
+    timeout: "انتهت مهلة تحديد الموقع. حاول مرة أخرى.",
+    generic: "حدث خطأ. يرجى إدخال العنوان يدويًا.",
+  },
+}

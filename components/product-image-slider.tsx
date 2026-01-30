@@ -7,6 +7,7 @@ import { Camera, ChevronLeft, ChevronRight, Maximize2, X, ZoomIn, ZoomOut, Downl
 import { triggerHaptic } from "@/lib/haptics"
 import { cn } from "@/lib/utils"
 import { blurPlaceholders } from "@/lib/image-utils"
+import { useLocale, useTranslations } from "next-intl"
 
 interface ProductImageSliderProps {
   images: string[]
@@ -15,6 +16,9 @@ interface ProductImageSliderProps {
 }
 
 export function ProductImageSlider({ images, productName, onTryOn }: ProductImageSliderProps) {
+  const locale = useLocale()
+  const t = useTranslations("product")
+  const isRtl = locale === "ar"
   const [currentIndex, setCurrentIndex] = useState(0)
   const [direction, setDirection] = useState(0)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -27,7 +31,7 @@ export function ProductImageSlider({ images, productName, onTryOn }: ProductImag
 
   const slideVariants = {
     enter: (direction: number) => ({
-      x: direction > 0 ? "100%" : "-100%",
+      x: direction * (isRtl ? -1 : 1) > 0 ? "100%" : "-100%",
       opacity: 0,
     }),
     center: {
@@ -36,7 +40,7 @@ export function ProductImageSlider({ images, productName, onTryOn }: ProductImag
       zIndex: 1,
     },
     exit: (direction: number) => ({
-      x: direction < 0 ? "100%" : "-100%",
+      x: direction * (isRtl ? -1 : 1) < 0 ? "100%" : "-100%",
       opacity: 0,
       zIndex: 0,
     }),
@@ -62,10 +66,12 @@ export function ProductImageSlider({ images, productName, onTryOn }: ProductImag
   const handleDragEnd = (_: any, info: PanInfo) => {
     if (scale > 1) return // Don't swipe when zoomed
     const swipe = swipePower(info.offset.x, info.velocity.x)
+    const nextDirection = isRtl ? -1 : 1
+    const prevDirection = isRtl ? 1 : -1
     if (swipe < -swipeConfidenceThreshold) {
-      paginate(1)
+      paginate(nextDirection)
     } else if (swipe > swipeConfidenceThreshold) {
-      paginate(-1)
+      paginate(prevDirection)
     }
   }
 
@@ -137,7 +143,7 @@ export function ProductImageSlider({ images, productName, onTryOn }: ProductImag
       try {
         await navigator.share({
           title: productName,
-          text: `Check out ${productName}`,
+          text: t("shareText", { productName }),
           url: window.location.href,
         })
       } catch (err) {
@@ -170,9 +176,11 @@ export function ProductImageSlider({ images, productName, onTryOn }: ProductImag
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute top-2 left-1/2 -translate-x-1/2 z-30 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full text-white text-sm font-medium"
+          className="absolute top-2 inset-x-0 z-30 flex justify-center"
         >
-          {currentIndex + 1} / {images.length}
+          <div className="bg-black/60 backdrop-blur-md px-4 py-2 rounded-full text-white text-sm font-medium">
+            {t("imageCounter", { current: currentIndex + 1, total: images.length })}
+          </div>
         </motion.div>
       )}
 
@@ -181,8 +189,8 @@ export function ProductImageSlider({ images, productName, onTryOn }: ProductImag
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={toggleFullscreen}
-          className="absolute top-2 right-2 z-30 w-10 h-10 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white shadow-lg"
-          aria-label="Fullscreen"
+          className="absolute top-2 ltr:right-2 rtl:left-2 z-30 w-10 h-10 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white shadow-lg"
+          aria-label={t("fullscreen")}
         >
           <Maximize2 className="w-5 h-5" />
         </motion.button>
@@ -242,19 +250,19 @@ export function ProductImageSlider({ images, productName, onTryOn }: ProductImag
         <>
           <motion.button
             whileTap={{ scale: 0.9 }}
-            onClick={() => paginate(-1)}
-            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center shadow-lg text-white"
-            aria-label="Previous image"
+            onClick={() => paginate(isRtl ? 1 : -1)}
+            className="absolute ltr:left-2 rtl:right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center shadow-lg text-white"
+            aria-label={t("previousImage")}
           >
-            <ChevronLeft className="w-5 h-5" />
+            {isRtl ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.9 }}
-            onClick={() => paginate(1)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center shadow-lg text-white"
-            aria-label="Next image"
+            onClick={() => paginate(isRtl ? -1 : 1)}
+            className="absolute ltr:right-2 rtl:left-2 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center shadow-lg text-white"
+            aria-label={t("nextImage")}
           >
-            <ChevronRight className="w-5 h-5" />
+            {isRtl ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
           </motion.button>
         </>
       )}
@@ -264,14 +272,14 @@ export function ProductImageSlider({ images, productName, onTryOn }: ProductImag
         <motion.div
           initial={{ opacity: 0, x: 10 }}
           animate={{ opacity: 1, x: 0 }}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-30 flex flex-col gap-2"
+          className="absolute ltr:right-4 rtl:left-4 top-1/2 -translate-y-1/2 z-30 flex flex-col gap-2"
         >
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={handleZoomIn}
             disabled={scale >= 3}
             className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white shadow-lg disabled:opacity-50"
-            aria-label="Zoom in"
+            aria-label={t("zoomIn")}
           >
             <ZoomIn className="w-6 h-6" />
           </motion.button>
@@ -280,7 +288,7 @@ export function ProductImageSlider({ images, productName, onTryOn }: ProductImag
             onClick={handleZoomOut}
             disabled={scale <= 1}
             className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white shadow-lg disabled:opacity-50"
-            aria-label="Zoom out"
+            aria-label={t("zoomOut")}
           >
             <ZoomOut className="w-6 h-6" />
           </motion.button>
@@ -288,7 +296,7 @@ export function ProductImageSlider({ images, productName, onTryOn }: ProductImag
             whileTap={{ scale: 0.9 }}
             onClick={handleShare}
             className="w-12 h-12 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white shadow-lg"
-            aria-label="Share"
+            aria-label={t("share")}
           >
             <Share2 className="w-5 h-5" />
           </motion.button>
@@ -300,31 +308,33 @@ export function ProductImageSlider({ images, productName, onTryOn }: ProductImag
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex gap-2 px-4 py-3 bg-black/60 backdrop-blur-md rounded-full max-w-[90vw] overflow-x-auto scrollbar-hide"
+          className="absolute bottom-4 inset-x-0 z-30 flex justify-center"
         >
-          {images.map((img, index) => (
-            <motion.button
-              key={index}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => goToSlide(index)}
-              className={cn(
-                "relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all",
-                index === currentIndex ? "border-white scale-110" : "border-transparent opacity-60"
-              )}
-            >
-              <Image
-                src={img || "/placeholder.svg"}
-                alt={`Thumbnail ${index + 1}`}
-                fill
-                className="object-cover"
-                sizes="56px"
-                quality={75}
-                loading="lazy"
-                placeholder="blur"
-                blurDataURL={blurPlaceholders.thumbnail}
-              />
-            </motion.button>
-          ))}
+          <div className="flex gap-2 px-4 py-3 bg-black/60 backdrop-blur-md rounded-full max-w-[90vw] overflow-x-auto scrollbar-hide">
+            {images.map((img, index) => (
+              <motion.button
+                key={index}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => goToSlide(index)}
+                className={cn(
+                  "relative w-14 h-14 rounded-lg overflow-hidden flex-shrink-0 border-2 transition-all",
+                  index === currentIndex ? "border-white scale-110" : "border-transparent opacity-60"
+                )}
+              >
+                <Image
+                  src={img || "/placeholder.svg"}
+                  alt={t("thumbnailAlt", { index: index + 1 })}
+                  fill
+                  className="object-cover"
+                  sizes="56px"
+                  quality={75}
+                  loading="lazy"
+                  placeholder="blur"
+                  blurDataURL={blurPlaceholders.thumbnail}
+                />
+              </motion.button>
+            ))}
+          </div>
         </motion.div>
       )}
     </div>
@@ -348,7 +358,7 @@ export function ProductImageSlider({ images, productName, onTryOn }: ProductImag
             className="bg-foreground text-background hover:bg-foreground/90 backdrop-blur-md px-8 py-4 rounded-full flex items-center gap-3 shadow-lg border border-border transition-colors font-medium"
           >
             <Camera className="w-5 h-5" />
-            <span>Try On with AI</span>
+            <span>{t("tryOnWithAi")}</span>
           </motion.button>
         </motion.div>
 
@@ -402,7 +412,7 @@ export function ProductImageSlider({ images, productName, onTryOn }: ProductImag
                     : "bg-muted-foreground/40 w-2"
                 )}
                 whileTap={{ scale: 0.9 }}
-                aria-label={`Go to image ${index + 1}`}
+                aria-label={t("goToImage", { index: index + 1 })}
               />
             ))}
           </div>
@@ -425,8 +435,8 @@ export function ProductImageSlider({ images, productName, onTryOn }: ProductImag
               exit={{ opacity: 0, scale: 0.8 }}
               whileTap={{ scale: 0.9 }}
               onClick={toggleFullscreen}
-              className="absolute top-4 right-4 z-[110] w-12 h-12 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white shadow-lg"
-              aria-label="Close fullscreen"
+              className="absolute top-4 ltr:right-4 rtl:left-4 z-[110] w-12 h-12 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white shadow-lg"
+              aria-label={t("closeFullscreen")}
             >
               <X className="w-6 h-6" />
             </motion.button>

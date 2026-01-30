@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { triggerHaptic, playSuccessSound } from "@/lib/haptics"
+import { useLocale, useTranslations } from "next-intl"
+import { cn } from "@/lib/utils"
 
 interface CollapsibleAddressFormProps {
   address: string
@@ -33,6 +35,9 @@ export function CollapsibleAddressForm({
   addressError = null,
   forceManualExpanded = false,
 }: CollapsibleAddressFormProps) {
+  const locale = useLocale()
+  const t = useTranslations("addressForm")
+  const isRtl = locale === "ar"
   const [isManualExpanded, setIsManualExpanded] = useState(false)
   const [isLoadingLocation, setIsLoadingLocation] = useState(false)
   const [locationError, setLocationError] = useState<string | null>(null)
@@ -43,7 +48,7 @@ export function CollapsibleAddressForm({
 
   const handleGetLocation = async () => {
     if (!navigator.geolocation) {
-      setLocationError("Geolocation is not supported by your browser")
+      setLocationError(t("errors.geoUnsupported"))
       return
     }
 
@@ -73,7 +78,7 @@ export function CollapsibleAddressForm({
             addr.state?.toLowerCase().includes("giza")
 
           if (!isCairoOrGiza) {
-            setLocationError("Sorry, we only deliver to Cairo and Giza")
+            setLocationError(t("errors.deliveryArea"))
             setIsLoadingLocation(false)
             return
           }
@@ -93,7 +98,7 @@ export function CollapsibleAddressForm({
           playSuccessSound()
           triggerHaptic("success")
         } catch (err) {
-          setLocationError("Failed to get your address. Please enter it manually.")
+          setLocationError(t("errors.addressFetchFailed"))
         } finally {
           setIsLoadingLocation(false)
         }
@@ -102,16 +107,16 @@ export function CollapsibleAddressForm({
         setIsLoadingLocation(false)
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            setLocationError("Location permission denied. Please enter your address manually.")
+            setLocationError(t("errors.permissionDenied"))
             break
           case error.POSITION_UNAVAILABLE:
-            setLocationError("Location unavailable. Please enter your address manually.")
+            setLocationError(t("errors.positionUnavailable"))
             break
           case error.TIMEOUT:
-            setLocationError("Location request timed out. Please try again.")
+            setLocationError(t("errors.timeout"))
             break
           default:
-            setLocationError("An error occurred. Please enter your address manually.")
+            setLocationError(t("errors.generic"))
         }
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
@@ -124,10 +129,10 @@ export function CollapsibleAddressForm({
       {showContactFields && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
           <div>
-            <label className="text-sm font-medium text-muted-foreground mb-2 block">Full Name</label>
+            <label className="text-sm font-medium text-muted-foreground mb-2 block">{t("fullName")}</label>
             <Input
               type="text"
-              placeholder="Your full name"
+              placeholder={t("fullNamePlaceholder")}
               value={fullName}
               onChange={(e) => onFullNameChange?.(e.target.value)}
               className="h-12 rounded-xl bg-muted border-0"
@@ -135,23 +140,24 @@ export function CollapsibleAddressForm({
           </div>
 
           <div>
-            <label className="text-sm font-medium text-muted-foreground mb-2 block">Phone Number</label>
+            <label className="text-sm font-medium text-muted-foreground mb-2 block">{t("phoneNumber")}</label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">+20</span>
+              <span className="absolute ltr:left-4 rtl:right-4 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">+20</span>
               <Input
                 type="tel"
-                placeholder="1XX XXX XXXX"
+                placeholder={t("phonePlaceholder")}
                 value={phoneNumber.replace(/^\+?20?/, "")}
                 onChange={(e) => onPhoneChange?.(e.target.value.replace(/[^\d\s]/g, ""))}
-                className={`pl-12 pr-20 h-12 rounded-xl bg-muted transition-all ${
+                className={cn(
+                  "h-12 rounded-xl bg-muted transition-all ltr:pl-12 rtl:pr-12 ltr:pr-20 rtl:pl-20",
                   isPhoneVerified ? "border-2 border-green-500/50 bg-green-500/5" : "border-0"
-                }`}
+                )}
                 disabled={isPhoneVerified}
               />
               {isPhoneVerified && (
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-green-500">
+                <div className="absolute ltr:right-4 rtl:left-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-green-500">
                   <Check className="w-4 h-4" />
-                  <span className="text-xs font-medium">Verified</span>
+                  <span className="text-xs font-medium">{t("verified")}</span>
                 </div>
               )}
             </div>
@@ -165,8 +171,8 @@ export function CollapsibleAddressForm({
             <MapPin className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <p className="font-semibold">Delivery Address</p>
-            <p className="text-sm text-muted-foreground">Cairo & Giza only</p>
+            <p className="font-semibold">{t("deliveryAddress")}</p>
+            <p className="text-sm text-muted-foreground">{t("deliveryAreas")}</p>
           </div>
         </div>
 
@@ -180,13 +186,13 @@ export function CollapsibleAddressForm({
         >
           {isLoadingLocation ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Getting location...
+              <Loader2 className="w-4 h-4 ltr:mr-2 rtl:ml-2 animate-spin" />
+              {t("gettingLocation")}
             </>
           ) : (
             <>
-              <Navigation className="w-4 h-4 mr-2" />
-              Use Current Location
+              <Navigation className="w-4 h-4 ltr:mr-2 rtl:ml-2" />
+              {t("useCurrentLocation")}
             </>
           )}
         </Button>
@@ -214,10 +220,10 @@ export function CollapsibleAddressForm({
               setIsManualExpanded(!isManualExpanded)
               triggerHaptic("light")
             }}
-            className="w-full p-3 flex items-center justify-between text-left"
+            className={cn("w-full p-3 flex items-center justify-between text-left", isRtl && "text-right")}
             whileTap={{ scale: 0.98 }}
           >
-            <span className="text-sm font-medium">Or enter manually</span>
+            <span className="text-sm font-medium">{t("enterManually")}</span>
             <motion.div animate={{ rotate: isManualExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </motion.div>
@@ -234,7 +240,7 @@ export function CollapsibleAddressForm({
               >
                 <div className="px-3 pb-3">
                   <Textarea
-                    placeholder="Building number, Street name, District/Area, City (Cairo/Giza), Landmark (optional)"
+                    placeholder={t("manualPlaceholder")}
                     value={address}
                     onChange={(e) => onAddressChange(e.target.value)}
                     className={`min-h-[120px] rounded-xl bg-card border-0 resize-none ${
@@ -243,7 +249,7 @@ export function CollapsibleAddressForm({
                   />
                   {addressError && <p className="text-xs text-red-500 mt-2">{addressError}</p>}
                   <p className="text-xs text-muted-foreground mt-2">
-                    Example: 15 El-Tahrir Street, Dokki, Giza, Near Metro Station
+                    {t("example")}
                   </p>
                 </div>
               </motion.div>

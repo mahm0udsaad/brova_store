@@ -1,0 +1,23 @@
+export const addressForm = {
+  fullName: "Full Name",
+  fullNamePlaceholder: "Your full name",
+  phoneNumber: "Phone Number",
+  phonePlaceholder: "1XX XXX XXXX",
+  verified: "Verified",
+  deliveryAddress: "Delivery Address",
+  deliveryAreas: "Cairo & Giza only",
+  gettingLocation: "Getting location...",
+  useCurrentLocation: "Use Current Location",
+  enterManually: "Or enter manually",
+  manualPlaceholder: "Building number, Street name, District/Area, City (Cairo/Giza), Landmark (optional)",
+  example: "Example: 15 El-Tahrir Street, Dokki, Giza, Near Metro Station",
+  errors: {
+    geoUnsupported: "Geolocation is not supported by your browser",
+    deliveryArea: "Sorry, we only deliver to Cairo and Giza",
+    addressFetchFailed: "Failed to get your address. Please enter it manually.",
+    permissionDenied: "Location permission denied. Please enter your address manually.",
+    positionUnavailable: "Location unavailable. Please enter your address manually.",
+    timeout: "Location request timed out. Please try again.",
+    generic: "An error occurred. Please enter your address manually.",
+  },
+}

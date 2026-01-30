@@ -1,4 +1,12 @@
-export function triggerHaptic(type: "light" | "medium" | "heavy" | "success" = "medium") {
+export type HapticType =
+  | "light"
+  | "medium"
+  | "heavy"
+  | "success"
+  | "warning"
+  | "error"
+
+export function triggerHaptic(type: HapticType = "medium") {
   if (typeof window === "undefined") return
 
   // Use Vibration API if available
@@ -8,6 +16,8 @@ export function triggerHaptic(type: "light" | "medium" | "heavy" | "success" = "
       medium: 25,
       heavy: 50,
       success: [50, 50, 100],
+      warning: [25, 25, 25],
+      error: [60, 60, 120],
     }
     navigator.vibrate(patterns[type])
   }

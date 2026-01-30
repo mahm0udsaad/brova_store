@@ -11,6 +11,15 @@ type OrderPayload = {
   total: number
 }
 
+type UserOrganization = {
+  organization_id: string
+  organization_slug: string
+  store_id: string
+  store_slug: string
+  store_type: string
+  store_status: string
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -28,10 +37,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Order items are required" }, { status: 400 })
     }
 
+    // Get user's organization and store for tenant isolation
+    const { data: orgData, error: orgError } = await supabase
+      .rpc('get_user_organization')
+      .single<UserOrganization>()
+
+    if (orgError || !orgData?.store_id) {
+      console.error('[POST /api/orders] Failed to get user organization:', orgError)
+      return NextResponse.json({
+        error: "Store not found. Please complete onboarding first."
+      }, { status: 400 })
+    }
+
     const { data, error } = await supabase
       .from("orders")
       .insert({
         user_id: user.id,
+        store_id: orgData.store_id, // Tenant isolation
         items: body.items,
         address: body.address,
         phone: body.phone,

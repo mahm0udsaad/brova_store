@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { triggerHaptic } from "@/lib/haptics"
 import type { CartItem as CartItemType } from "@/types"
+import { useLocale, useTranslations } from "next-intl"
 
 interface CartItemProps {
   item: CartItemType
@@ -14,6 +15,14 @@ interface CartItemProps {
 }
 
 export function CartItem({ item, onUpdateQuantity, index = 0 }: CartItemProps) {
+  const locale = useLocale()
+  const t = useTranslations("cart")
+  const isRtl = locale === "ar"
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-EG", {
+      style: "currency",
+      currency: "EGP",
+    }).format(value)
   const handleQuantityChange = (newQuantity: number) => {
     triggerHaptic("light")
     onUpdateQuantity(item.product.id, item.selectedSize, newQuantity)
@@ -27,9 +36,9 @@ export function CartItem({ item, onUpdateQuantity, index = 0 }: CartItemProps) {
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, x: -20 }}
+      initial={{ opacity: 0, x: isRtl ? 20 : -20 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20, height: 0 }}
+      exit={{ opacity: 0, x: isRtl ? -20 : 20, height: 0 }}
       transition={{
         duration: 0.3,
         delay: index * 0.05,
@@ -61,11 +70,13 @@ export function CartItem({ item, onUpdateQuantity, index = 0 }: CartItemProps) {
             </h3>
             {item.customDesign && (
               <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 mb-1">
-                Custom Design
+                {t("customDesign")}
               </span>
             )}
-            <p className="text-lg font-semibold text-foreground mt-0.5">EGP {item.product.price.toLocaleString()}</p>
-            <p className="text-sm text-muted-foreground">Size: {item.selectedSize}</p>
+            <p className="text-lg font-semibold text-foreground mt-0.5">{formatCurrency(item.product.price)}</p>
+            <p className="text-sm text-muted-foreground">
+              {t("sizeLabel")} {item.selectedSize}
+            </p>
           </div>
 
           {/* Remove button */}
@@ -73,7 +84,7 @@ export function CartItem({ item, onUpdateQuantity, index = 0 }: CartItemProps) {
             whileTap={{ scale: 0.9 }}
             onClick={handleRemove}
             className="p-2 text-muted-foreground hover:text-destructive-foreground transition-colors"
-            aria-label="Remove item"
+            aria-label={t("removeItem")}
           >
             <Trash2 className="w-4 h-4" />
           </motion.button>
@@ -88,7 +99,7 @@ export function CartItem({ item, onUpdateQuantity, index = 0 }: CartItemProps) {
                 size="icon"
                 className="h-9 w-9 rounded-l-xl rounded-r-none"
                 onClick={() => handleQuantityChange(item.quantity - 1)}
-                aria-label="Decrease quantity"
+                aria-label={t("decreaseQuantity")}
               >
                 <Minus className="w-4 h-4" />
               </Button>
@@ -112,15 +123,15 @@ export function CartItem({ item, onUpdateQuantity, index = 0 }: CartItemProps) {
                 size="icon"
                 className="h-9 w-9 rounded-r-xl rounded-l-none"
                 onClick={() => handleQuantityChange(item.quantity + 1)}
-                aria-label="Increase quantity"
+                aria-label={t("increaseQuantity")}
               >
                 <Plus className="w-4 h-4" />
               </Button>
             </motion.div>
           </div>
 
-          <span className="text-sm text-muted-foreground ml-auto">
-            EGP {(item.product.price * item.quantity).toLocaleString()}
+          <span className="text-sm text-muted-foreground ltr:ml-auto rtl:mr-auto">
+            {formatCurrency(item.product.price * item.quantity)}
           </span>
         </div>
       </div>

@@ -1,7 +1,18 @@
+import createNextIntlPlugin from 'next-intl/plugin'
+import { dirname } from 'path'
+import { fileURLToPath } from 'url'
+
+const withNextIntl = createNextIntlPlugin('./i18n.ts')
+const repoRoot = dirname(fileURLToPath(import.meta.url))
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  typescript: {
-    ignoreBuildErrors: true,
+  // Optimize package imports for better tree-shaking
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'framer-motion'],
+  },
+  turbopack: {
+    root: repoRoot,
   },
   images: {
     // Enable optimization for better performance
@@ -29,4 +40,4 @@ const nextConfig = {
   },
 }
 
-export default nextConfig
+export default withNextIntl(nextConfig)

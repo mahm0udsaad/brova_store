@@ -1,4 +1,5 @@
 import type { CartItem, Order, ContactInfo, Address, UserProfile } from "@/types"
+export type { UserProfile } from "@/types"
 
 const CART_KEY = "atypical_cart"
 const ORDER_KEY = "atypical_order"

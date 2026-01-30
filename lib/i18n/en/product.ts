@@ -1,0 +1,18 @@
+export const product = {
+  imageCounter: "{current} / {total}",
+  fullscreen: "Fullscreen",
+  previousImage: "Previous image",
+  nextImage: "Next image",
+  zoomIn: "Zoom in",
+  zoomOut: "Zoom out",
+  share: "Share",
+  shareText: "Check out {productName}",
+  thumbnailAlt: "Thumbnail {index}",
+  goToImage: "Go to image {index}",
+  closeFullscreen: "Close fullscreen",
+  tryOnWithAi: "Try On with AI",
+  addFavorite: "Add to favorites",
+  removeFavorite: "Remove from favorites",
+  addToCart: "Add to cart",
+  pricingSoon: "Pricing soon",
+}

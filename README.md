@@ -1,30 +1,30 @@
-# E-commerce UI recreation
+# Brova - AI-First Store Builder
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+This repository contains the source code for the Brova store builder.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/mahm0udsaads-projects/v0-e-commerce-ui-recreation)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/tweoM2aZxv1)
+## Getting Started
 
-## Overview
+**Note: This project strictly enforces `pnpm`. Do not use `npm`, `yarn`, or `bun`.**
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+1.  **Install pnpm**: If you haven't already, install pnpm:
+    ```bash
+    npm install -g pnpm
+    ```
+
+2.  **Install dependencies**:
+    ```bash
+    pnpm install
+    ```
+
+3.  **Run development server**:
+    ```bash
+    pnpm dev
+    ```
 
 ## Deployment
 
-Your project is live at:
+The project is designed to be deployed on Vercel.
 
-**[https://vercel.com/mahm0udsaads-projects/v0-e-commerce-ui-recreation](https://vercel.com/mahm0udsaads-projects/v0-e-commerce-ui-recreation)**
+## Documentation
 
-## Build your app
-
-Continue building your app on:
-
-**[https://v0.app/chat/tweoM2aZxv1](https://v0.app/chat/tweoM2aZxv1)**
-
-## How It Works
-
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+See the `docs/` directory for more details.

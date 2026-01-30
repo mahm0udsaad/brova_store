@@ -24,7 +24,7 @@ export function NotificationPermissionModal() {
     }
 
     // Show modal after user signs in and hasn't been asked before
-    const hasAskedForNotifications = localStorage.getItem("brova-notification-asked")
+    const hasAskedForNotifications = localStorage.getItem("store-notification-asked")
     
     if (isAuthenticated && !hasAskedForNotifications && supported && Notification.permission === "default") {
       // Small delay after sign in
@@ -61,11 +61,11 @@ export function NotificationPermissionModal() {
             })
         }
         
-        localStorage.setItem("brova-notification-asked", "true")
-        localStorage.setItem("brova-notification-enabled", "true")
+        localStorage.setItem("store-notification-asked", "true")
+        localStorage.setItem("store-notification-enabled", "true")
         
         // Show success notification
-        new Notification("Brova Notifications Enabled! 🎉", {
+        new Notification("Notifications Enabled! 🎉", {
           body: "You'll receive updates about your orders.",
           icon: "/icon-192x192.jpg",
           badge: "/icon-192x192.jpg",
@@ -80,8 +80,8 @@ export function NotificationPermissionModal() {
 
   const handleDeny = () => {
     triggerHaptic("medium")
-    localStorage.setItem("brova-notification-asked", "true")
-    localStorage.setItem("brova-notification-enabled", "false")
+    localStorage.setItem("store-notification-asked", "true")
+    localStorage.setItem("store-notification-enabled", "false")
     
     if (user) {
       const supabase = createClient()

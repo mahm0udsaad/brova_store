@@ -2,7 +2,7 @@ import { createClient as createBrowserClient } from "@/lib/supabase/client"
 
 /**
  * Client-side admin check
- * Checks if the current user is an admin by querying the admins table
+ * Checks if the current user is an admin by querying the profiles table
  */
 export async function isAdminClient(): Promise<boolean> {
   try {
@@ -11,18 +11,30 @@ export async function isAdminClient(): Promise<boolean> {
       data: { user },
     } = await supabase.auth.getUser()
 
-    if (!user) return false
+    console.log("[isAdminClient] Checking admin status for user:", user?.id)
 
-    const { data, error } = await supabase.from("admins").select("id").eq("id", user.id).single()
-
-    if (error) {
-      // Not an admin or error occurred
+    if (!user) {
+      console.log("[isAdminClient] No user found")
       return false
     }
 
-    return !!data
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user.id)
+      .single()
+
+    if (error) {
+      console.error("[isAdminClient] Error querying profile:", error)
+      return false
+    }
+
+    console.log("[isAdminClient] Profile data:", data)
+    console.log("[isAdminClient] Is admin?", data?.is_admin === true)
+
+    return data?.is_admin === true
   } catch (error) {
-    console.error("Error in isAdminClient check:", error)
+    console.error("[isAdminClient] Exception:", error)
     return false
   }
 }

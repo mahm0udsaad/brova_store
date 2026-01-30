@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 import { triggerHaptic } from "@/lib/haptics"
 
 interface CategoryTabsProps {
-  categories: string[]
+  categories: { value: string; label: string }[]
   activeCategory: string
   onCategoryChange: (category: string) => void
 }
@@ -19,11 +19,11 @@ export function CategoryTabs({ categories, activeCategory, onCategoryChange }: C
   return (
     <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
       {categories.map((category, index) => {
-        const isActive = activeCategory === category
+        const isActive = activeCategory === category.value
         return (
           <motion.button
-            key={category}
-            onClick={() => handleCategoryClick(category)}
+            key={category.value}
+            onClick={() => handleCategoryClick(category.value)}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
@@ -41,7 +41,7 @@ export function CategoryTabs({ categories, activeCategory, onCategoryChange }: C
               />
             )}
             {!isActive && <div className="absolute inset-0 bg-muted rounded-full" />}
-            <span className="relative z-10">{category}</span>
+            <span className="relative z-10">{category.label}</span>
           </motion.button>
         )
       })}

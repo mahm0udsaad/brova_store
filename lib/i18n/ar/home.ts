@@ -1,0 +1,26 @@
+export const home = {
+  filters: "تصفية الفئات",
+  toggleView: "تبديل عرض الفئات",
+  hero: {
+    kicker: "كن مختلفًا",
+    title: "المنتجات الأكثر شيوعًا",
+    subtitle: "لا تفوّت أحدث الإصدارات مع نشرة العروض الجديدة.",
+  },
+  loadingMore: "جاري تحميل المزيد...",
+  endOfList: "لقد شاهدت جميع المنتجات",
+  emptyState: "لا توجد منتجات في هذه الفئة.",
+  categories: {
+    title: "الفئات",
+    close: "إغلاق",
+    selected: "محدد",
+    all: "الكل",
+    shopAll: "تسوّق كل شيء",
+    items: "{count} عنصر",
+    hoodies: "هوديز",
+    joggers: "جوجرز",
+    shorts: "شورتات",
+    tShirts: "تي شيرت",
+    "t-shirts": "تي شيرت",
+    accessories: "إكسسوارات",
+  },
+}
