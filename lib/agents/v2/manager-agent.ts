@@ -32,7 +32,7 @@ export function createManagerAgent(context: AgentContext) {
   const delegateToVision = tool({
     description:
       "Delegate image analysis to the Vision Agent. It will group images by visual similarity and suggest primary images. Use this when the user uploads multiple images.",
-    parameters: z.object({
+    inputSchema: z.object({
       image_urls: z
         .array(z.string())
         .describe("URLs of images to analyze"),
@@ -57,7 +57,7 @@ ${batch_id ? `Batch ID: ${batch_id}` : ""}`,
   const delegateToProductIntel = tool({
     description:
       "Delegate product detail generation to the Product Intelligence Agent. It will create bilingual (AR/EN) drafts with names, descriptions, categories, and tags. Use this after images have been grouped.",
-    parameters: z.object({
+    inputSchema: z.object({
       groups: z
         .array(
           z.object({
@@ -119,7 +119,7 @@ Use the generate_product_details tool with the full group data.`,
   const delegateToEditor = tool({
     description:
       "Delegate a text editing task to the Editing Agent. Use this when the user wants to refine a product name or description.",
-    parameters: z.object({
+    inputSchema: z.object({
       text: z.string().describe("Text to edit"),
       instruction: z.string().describe("Edit instruction"),
       field: z.enum(["name", "description"]),

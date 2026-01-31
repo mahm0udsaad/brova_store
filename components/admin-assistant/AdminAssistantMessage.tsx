@@ -232,7 +232,8 @@ export function AdminAssistantMessage({ message, expanded = false, onRetry }: Ad
                 h1: ({ children }) => <h1 className="text-base font-bold mb-3 mt-4 first:mt-0 text-foreground">{children}</h1>,
                 h2: ({ children }) => <h2 className="text-sm font-semibold mb-2 mt-3 first:mt-0 text-foreground">{children}</h2>,
                 h3: ({ children }) => <h3 className="text-sm font-medium mb-2 mt-2 first:mt-0 text-muted-foreground">{children}</h3>,
-                code: ({ inline, children, ...props }) => {
+                code: ({ children, ...props }: any) => {
+                  const inline = !(props.className?.includes("language-"))
                   if (inline) {
                     return <code className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-xs font-mono font-semibold" {...props}>{children}</code>
                   }

@@ -190,7 +190,7 @@ Return ONLY valid JSON.`
     const result = await generateText({
       model: models.flash,
       messages: [{ role: "user", content: prompt }],
-      maxTokens: 400,
+      maxOutputTokens: 400,
     })
 
     const jsonMatch = result.text.match(/\{[\s\S]*\}/)

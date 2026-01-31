@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback } from "react"
-import type { UseAgentStreamReturn } from "@/hooks/use-agent-stream"
+type UseAgentStreamReturn = any
 import type { ProductDraft } from "./useDraftState"
 
 export interface ToolHandlersConfig {

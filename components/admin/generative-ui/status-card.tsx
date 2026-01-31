@@ -46,17 +46,17 @@ export function StatusCard({
           <p className="text-sm font-medium text-foreground">{title}</p>
           <p className="mt-0.5 text-xs text-muted-foreground">{message}</p>
 
-          {details?.created_product_ids?.length > 0 && (
+          {(details?.created_product_ids?.length ?? 0) > 0 && (
             <p className="mt-2 text-xs text-green-600 dark:text-green-400">
               {isRtl ? "تم إنشاء" : "Created"}{" "}
-              {details.created_product_ids.length}{" "}
+              {details!.created_product_ids.length}{" "}
               {isRtl ? "منتج(ات)" : "product(s)"}
             </p>
           )}
 
-          {details?.failed_draft_ids?.length > 0 && (
+          {(details?.failed_draft_ids?.length ?? 0) > 0 && (
             <p className="mt-1 text-xs text-red-600 dark:text-red-400">
-              {isRtl ? "فشل" : "Failed"}: {details.failed_draft_ids.length}{" "}
+              {isRtl ? "فشل" : "Failed"}: {details!.failed_draft_ids.length}{" "}
               {isRtl ? "مسودة" : "draft(s)"}
             </p>
           )}

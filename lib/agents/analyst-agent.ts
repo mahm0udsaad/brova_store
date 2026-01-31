@@ -405,7 +405,7 @@ Keep insights concise and specific. Focus on:
       const result = await generateText({
         model: models.flash,
         messages: [{ role: "user", content: prompt }],
-        maxTokens: 400,
+        maxOutputTokens: 400,
       })
 
       return {

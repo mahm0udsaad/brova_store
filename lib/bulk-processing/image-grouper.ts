@@ -106,7 +106,7 @@ Return ONLY valid JSON, no other text.`
     const result = await generateText({
       model: models.flash,
       messages: [{ role: "user", content: prompt }],
-      maxTokens: 2000,
+      maxOutputTokens: 2000,
     })
 
     // Parse the JSON response
@@ -227,7 +227,7 @@ Return ONLY the product name, nothing else.`
     const result = await generateText({
       model: models.flash,
       messages: [{ role: "user", content: prompt }],
-      maxTokens: 50,
+      maxOutputTokens: 50,
     })
 
     return result.text.trim() || currentName

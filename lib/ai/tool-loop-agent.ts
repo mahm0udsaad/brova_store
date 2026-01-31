@@ -1,36 +1,14 @@
-import { generateText, streamText } from "ai"
-
-type StopCondition = { type: "stepCount"; maxSteps: number }
-
-type ToolLoopAgentConfig = {
-  model: unknown
-  system?: string
-  tools?: Record<string, unknown>
-  stopWhen?: StopCondition
-}
-
-type GenerateArgs = { prompt: string }
-
-export function stepCountIs(maxSteps: number): StopCondition {
-  return { type: "stepCount", maxSteps }
-}
-
-export class ToolLoopAgent {
-  private readonly config: ToolLoopAgentConfig
-
-  constructor(config: ToolLoopAgentConfig) {
-    this.config = config
-  }
-
-  async generate({ prompt }: GenerateArgs) {
-    const { model, system, tools, stopWhen } = this.config
-    const maxSteps = stopWhen?.type === "stepCount" ? stopWhen.maxSteps : undefined
-    return generateText({ model, system, prompt, tools, maxSteps })
-  }
-
-  async stream({ prompt }: GenerateArgs) {
-    const { model, system, tools, stopWhen } = this.config
-    const maxSteps = stopWhen?.type === "stepCount" ? stopWhen.maxSteps : undefined
-    return streamText({ model, system, prompt, tools, maxSteps })
-  }
-}
+/**
+ * Re-export ToolLoopAgent and related utilities from the AI SDK.
+ *
+ * Previously this file contained a custom thin wrapper around generateText/streamText.
+ * AI SDK v6 provides a full-featured ToolLoopAgent class natively, so we now
+ * re-export directly from the SDK to get all v6 features:
+ * - callOptionsSchema / prepareCall
+ * - InferAgentUIMessage type inference
+ * - createAgentUIStreamResponse for streaming
+ * - stopWhen / stepCountIs for loop control
+ * - Native tool approval (needsApproval)
+ */
+export { ToolLoopAgent, stepCountIs } from "ai"
+export type { InferAgentUIMessage } from "ai"

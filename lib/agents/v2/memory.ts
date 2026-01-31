@@ -111,7 +111,7 @@ Summary (2-4 sentences):`
     const result = await generateText({
       model: models.flash,
       messages: [{ role: "user", content: prompt }],
-      maxTokens: 200,
+      maxOutputTokens: 200,
     })
 
     return result.text.trim()

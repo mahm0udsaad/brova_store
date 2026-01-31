@@ -99,7 +99,7 @@ export default async function PricingPage() {
                 <td className="p-4 text-gray-600 dark:text-gray-300">Products</td>
                 {plans.map(plan => (
                   <td key={plan.id} className="text-center p-4 text-gray-900 dark:text-white">
-                    {plan.product_limit === -1 ? 'Unlimited' : plan.product_limit}
+                    {plan.max_products === -1 ? 'Unlimited' : plan.max_products}
                   </td>
                 ))}
               </tr>
@@ -107,7 +107,7 @@ export default async function PricingPage() {
                 <td className="p-4 text-gray-600 dark:text-gray-300">AI Generations/Month</td>
                 {plans.map(plan => (
                   <td key={plan.id} className="text-center p-4 text-gray-900 dark:text-white">
-                    {plan.ai_generation_limit === -1 ? 'Unlimited' : plan.ai_generation_limit}
+                    {plan.max_ai_generations === -1 ? 'Unlimited' : plan.max_ai_generations}
                   </td>
                 ))}
               </tr>
@@ -115,7 +115,7 @@ export default async function PricingPage() {
                 <td className="p-4 text-gray-600 dark:text-gray-300">Transaction Fee</td>
                 {plans.map(plan => (
                   <td key={plan.id} className="text-center p-4 text-gray-900 dark:text-white">
-                    {plan.transaction_fee}%
+                    {plan.transaction_fee_percent}%
                   </td>
                 ))}
               </tr>

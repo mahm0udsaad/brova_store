@@ -74,7 +74,7 @@ Keep concepts authentic to streetwear culture and optimized for the platform.`
       const result = await generateText({
         model: models.flash,
         messages: [{ role: "user", content: prompt }],
-        maxTokens: 600,
+        maxOutputTokens: 600,
       })
 
       return {
@@ -129,7 +129,7 @@ Format as a shot-by-shot breakdown.`
       const result = await generateText({
         model: models.flash,
         messages: [{ role: "user", content: prompt }],
-        maxTokens: 800,
+        maxOutputTokens: 800,
       })
 
       return {
@@ -179,7 +179,7 @@ Keep recommendations authentic to streetwear culture.`
       const result = await generateText({
         model: models.flash,
         messages: [{ role: "user", content: prompt }],
-        maxTokens: 500,
+        maxOutputTokens: 500,
       })
 
       return {

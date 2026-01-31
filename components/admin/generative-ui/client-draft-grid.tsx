@@ -78,8 +78,6 @@ export function ClientDraftGrid({ drafts, context }: ClientDraftGridProps) {
         draftIds={approvalState.draftIds}
         totalProducts={approvalState.draftIds.length}
         locale={locale}
-        onConfirm={handleConfirm}
-        onCancel={handleCancel}
       />
     );
   }

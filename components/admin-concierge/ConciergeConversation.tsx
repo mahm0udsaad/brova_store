@@ -39,7 +39,7 @@ export function ConciergeConversation({ onRequestReview, context }: ConciergeCon
 
   // Use the AI SDK hooks for messages and actions
   const [aiMessages, setAiMessages] = useUIState<typeof AI>();
-  const { submitUserMessage } = useActions<typeof AI>();
+  const { submitUserMessage } = useActions<typeof AI>() as any;
 
   const [input, setInput] = useState("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -58,7 +58,7 @@ export function ConciergeConversation({ onRequestReview, context }: ConciergeCon
 
   // Trigger initial AI greeting when conversation starts
   useEffect(() => {
-    if (aiMessages.length === 0 && currentStep === 'conversation') {
+    if (aiMessages.length === 0 && (currentStep as string) === 'conversation') {
       // Send empty message with special flag to trigger greeting
       submitUserMessage('', {
         ...context,

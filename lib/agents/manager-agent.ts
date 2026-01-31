@@ -492,7 +492,7 @@ Available capabilities: ${legacyContext.capabilities.join(", ")}${adminContext}
           model: models.pro,
           system: MANAGER_SYSTEM_PROMPT,
           messages,
-          maxTokens: 2000,
+          maxOutputTokens: 2000,
         }),
         "manager"
       )
@@ -623,7 +623,7 @@ Based on these results, provide a clear, concise summary for the merchant.
           model: models.flash,
           system: "You are a helpful AI assistant summarizing task results for a merchant.",
           messages: [{ role: "user", content: prompt }],
-          maxTokens: 500,
+          maxOutputTokens: 500,
         }),
         "manager"
       )

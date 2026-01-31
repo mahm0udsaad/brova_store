@@ -215,7 +215,7 @@ export async function POST(request: NextRequest) {
       system: buildSystemPrompt(locale, context),
       messages,
       temperature: 0.7,
-      maxTokens: 1000,
+      maxOutputTokens: 1000,
     })
     
     // Parse AI response

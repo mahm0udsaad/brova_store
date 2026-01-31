@@ -20,7 +20,7 @@ interface AddressFormProps {
 const ALLOWED_CITIES = ["Cairo", "Giza"] as const
 
 const inputVariants = {
-  focus: { scale: 1.01, transition: { type: "spring", stiffness: 300 } },
+  focus: { scale: 1.01, transition: { type: "spring" as const, stiffness: 300 } },
   blur: { scale: 1 },
 }
 

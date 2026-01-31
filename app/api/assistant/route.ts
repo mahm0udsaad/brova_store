@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       tools: {
         searchProducts: tool({
           description: "Search storefront products by name or description.",
-          parameters: z.object({
+          inputSchema: z.object({
             query: z.string().min(1, "Query is required."),
             limit: z.number().int().min(1).max(8).optional(),
           }),
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
       },
     })
 
-    return result.toDataStreamResponse()
+    return result.toTextStreamResponse()
   } catch (error) {
     const message = error instanceof Error ? error.message : "Assistant failed to respond."
     return new Response(message, { status: 500 })

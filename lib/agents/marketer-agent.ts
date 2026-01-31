@@ -130,7 +130,7 @@ Generate UNIQUE content for each platform. Return ONLY valid JSON, no additional
           { role: "user", content: userPrompt },
         ],
         temperature: 0.8,
-        maxTokens: 2000,
+        maxOutputTokens: 2000,
       })
 
       // Parse the JSON response
@@ -281,7 +281,7 @@ Output just the caption text, nothing else.`
       const result = await generateText({
         model: models.flash,
         messages: [{ role: "user", content: prompt }],
-        maxTokens: 500,
+        maxOutputTokens: 500,
       })
 
       await this.trackUsage("text_generation", result.usage?.totalTokens || 0)
@@ -340,7 +340,7 @@ SUBJECT: [subject line]
       const result = await generateText({
         model: models.flash,
         messages: [{ role: "user", content: prompt }],
-        maxTokens: 800,
+        maxOutputTokens: 800,
       })
 
       // Parse subject and body
@@ -392,7 +392,7 @@ Output as a space-separated list of hashtags only.`
       const result = await generateText({
         model: models.flash,
         messages: [{ role: "user", content: prompt }],
-        maxTokens: 200,
+        maxOutputTokens: 200,
       })
 
       const hashtags = result.text
@@ -524,7 +524,7 @@ Keep suggestions authentic to streetwear culture.`
       const result = await generateText({
         model: models.flash,
         messages: [{ role: "user", content: prompt }],
-        maxTokens: 600,
+        maxOutputTokens: 600,
       })
 
       await this.trackUsage("text_generation", result.usage?.totalTokens || 0)

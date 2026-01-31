@@ -383,7 +383,7 @@ Just output the description text, nothing else.`
       const result = await generateWithRetry({
         model,
         messages: [{ role: "user", content: prompt }],
-        maxTokens: 200,
+        maxOutputTokens: 200,
       })
 
       return {

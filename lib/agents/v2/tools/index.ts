@@ -23,7 +23,7 @@ import {
 export const analyzeImages = tool({
   description:
     "Analyze uploaded product images and group them by visual similarity. Groups images that show the same product (different angles, colors, etc.).",
-  parameters: z.object({
+  inputSchema: z.object({
     image_urls: z.array(z.string()).describe("URLs of images to analyze"),
     batch_id: z.string().optional().describe("Batch ID for tracking"),
   }),
@@ -49,7 +49,7 @@ export const analyzeImages = tool({
 export const generateProductDetails = tool({
   description:
     "Generate bilingual (AR/EN) product details including name, description, category, and tags for a product image group. Saves result as a draft.",
-  parameters: z.object({
+  inputSchema: z.object({
     group: z.object({
       id: z.string(),
       name: z.string(),
@@ -107,7 +107,7 @@ Return ONLY valid JSON.`
     const result = await generateText({
       model: models.pro,
       messages: [{ role: "user", content: prompt }],
-      maxTokens: 500,
+      maxOutputTokens: 500,
     })
 
     let details: any
@@ -183,7 +183,7 @@ Return ONLY valid JSON.`
 export const suggestCategories = tool({
   description:
     "Suggest product categories based on product name and description.",
-  parameters: z.object({
+  inputSchema: z.object({
     product_name: z.string(),
     store_type: z.enum(["clothing", "car_care"]),
   }),
@@ -218,7 +218,7 @@ Return ONLY valid JSON.`
     const result = await generateText({
       model: models.flash,
       messages: [{ role: "user", content: prompt }],
-      maxTokens: 100,
+      maxOutputTokens: 100,
     })
 
     try {
@@ -235,7 +235,7 @@ Return ONLY valid JSON.`
 export const rewriteText = tool({
   description:
     "Rewrite product text (name or description) with a specific instruction like 'make it shorter', 'more formal', etc.",
-  parameters: z.object({
+  inputSchema: z.object({
     text: z.string().describe("Original text to rewrite"),
     instruction: z
       .string()
@@ -259,7 +259,7 @@ Rules:
     const result = await generateText({
       model: models.flash,
       messages: [{ role: "user", content: prompt }],
-      maxTokens: field === "name" ? 50 : 200,
+      maxOutputTokens: field === "name" ? 50 : 200,
     })
 
     return { original: text, rewritten: result.text.trim() }
@@ -271,7 +271,7 @@ Rules:
 export const askUser = tool({
   description:
     "Ask the user a question with predefined options. Use this for confirmations, preferences, and decisions. The response will be rendered as interactive buttons in the UI.",
-  parameters: z.object({
+  inputSchema: z.object({
     question: z.string().describe("The question to ask"),
     options: z
       .array(
@@ -292,7 +292,7 @@ export const askUser = tool({
 export const renderDraftCards = tool({
   description:
     "Render a grid of draft product cards for user review. Each card shows the product image slider, name, price, and action buttons.",
-  parameters: z.object({
+  inputSchema: z.object({
     draft_ids: z.array(z.string()).describe("IDs of drafts to display"),
   }),
   execute: async ({ draft_ids }) => {
@@ -331,7 +331,7 @@ export const renderDraftCards = tool({
 export const confirmAndPersist = tool({
   description:
     "Persist approved draft products to the store. This is the ONLY tool that writes to store_products. Requires explicit user confirmation first.",
-  parameters: z.object({
+  inputSchema: z.object({
     draft_ids: z.array(z.string()).describe("IDs of approved drafts"),
     store_id: z.string().describe("Target store ID"),
     merchant_id: z.string().describe("Merchant ID for ownership"),
@@ -415,7 +415,7 @@ export const confirmAndPersist = tool({
 export const updateDraft = tool({
   description:
     "Update a specific field on a product draft. Used when the user edits a draft via the UI.",
-  parameters: z.object({
+  inputSchema: z.object({
     draft_id: z.string().describe("Draft ID to update"),
     field: z
       .enum([
@@ -450,7 +450,7 @@ export const updateDraft = tool({
 
 export const discardDrafts = tool({
   description: "Discard draft products that the user does not want to keep.",
-  parameters: z.object({
+  inputSchema: z.object({
     draft_ids: z.array(z.string()).describe("IDs of drafts to discard"),
     merchant_id: z.string().describe("Merchant ID for ownership check"),
   }),

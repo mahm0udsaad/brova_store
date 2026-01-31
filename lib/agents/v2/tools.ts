@@ -21,7 +21,7 @@ import { models } from "@/lib/ai/gateway"
 export const askUser = tool({
   description:
     "Ask the user a question with multiple choice options. This will render as interactive buttons in the UI. Use this when you need the user to make a decision.",
-  parameters: z.object({
+  inputSchema: z.object({
     question: z
       .string()
       .describe(
@@ -67,7 +67,7 @@ export const askUser = tool({
 export const renderDraftCards = tool({
   description:
     "Render product draft cards for user review. This will show product previews with images, names, descriptions, and edit buttons.",
-  parameters: z.object({
+  inputSchema: z.object({
     draft_ids: z
       .array(z.string())
       .describe("UUIDs of drafts to display from the product_drafts table"),
@@ -105,7 +105,7 @@ export const renderDraftCards = tool({
 export const confirmAndPersist = tool({
   description:
     "Persist approved product drafts to the store's product catalog. This moves drafts from product_drafts to store_products. ONLY use this after the user explicitly confirms they want to save.",
-  parameters: z.object({
+  inputSchema: z.object({
     draft_ids: z
       .array(z.string())
       .describe("UUIDs of drafts to persist to store_products"),
@@ -212,7 +212,7 @@ export const confirmAndPersist = tool({
 export const updateDraft = tool({
   description:
     "Update specific fields of a product draft. Use this when the user wants to edit a draft's name, description, category, or other details.",
-  parameters: z.object({
+  inputSchema: z.object({
     draft_id: z.string().describe("UUID of the draft to update"),
     updates: z
       .object({
@@ -267,7 +267,7 @@ export const updateDraft = tool({
 export const discardDrafts = tool({
   description:
     "Delete product drafts that the user doesn't want to keep. This permanently removes drafts from the database. ONLY use this after the user explicitly confirms they want to discard.",
-  parameters: z.object({
+  inputSchema: z.object({
     draft_ids: z
       .array(z.string())
       .describe("UUIDs of drafts to delete from product_drafts table"),
@@ -322,7 +322,7 @@ export const discardDrafts = tool({
 export const rewriteText = tool({
   description:
     "Rewrite a product name or description based on an instruction. Use this when you need to refine text for clarity, tone, or length.",
-  parameters: z.object({
+  inputSchema: z.object({
     text: z.string().describe("The original text to rewrite"),
     instruction: z
       .string()
@@ -356,7 +356,7 @@ Return ONLY the rewritten ${field}, nothing else.`
       const result = await generateText({
         model: models.flash,
         prompt,
-        maxTokens: field === "name" ? 50 : 200,
+        maxOutputTokens: field === "name" ? 50 : 200,
       })
 
       const rewritten = result.text.trim()
@@ -391,7 +391,7 @@ Return ONLY the rewritten ${field}, nothing else.`
 export const analyzeImages = tool({
   description:
     "Analyze product images and group them by visual similarity. This uses multimodal vision AI to detect which images show the same product.",
-  parameters: z.object({
+  inputSchema: z.object({
     image_urls: z
       .array(z.string())
       .min(1)
@@ -435,7 +435,6 @@ Return a JSON array of groups.`
       const result = await generateObject({
         model: models.vision,
         schema,
-        prompt,
         messages: [
           {
             role: "user",
@@ -496,7 +495,7 @@ Return a JSON array of groups.`
 export const generateProductDetails = tool({
   description:
     "Generate bilingual (English + Arabic) product details including name, description, category, tags, and price suggestion. Saves result as a draft in product_drafts table.",
-  parameters: z.object({
+  inputSchema: z.object({
     group_id: z.string().describe("The image group ID this product is for"),
     group_name: z.string().describe("Initial product name from vision analysis"),
     image_urls: z.array(z.string()).describe("All images for this product"),
@@ -636,7 +635,7 @@ Important:
 export const suggestCategories = tool({
   description:
     "Suggest appropriate product categories based on store type and product description. Use this when the category is unclear.",
-  parameters: z.object({
+  inputSchema: z.object({
     product_description: z.string().describe("Product name or description"),
     store_type: z.enum(["clothing", "car_care"]).describe("Type of store"),
   }),

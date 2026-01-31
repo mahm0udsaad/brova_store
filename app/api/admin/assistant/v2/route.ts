@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
     console.log("V2 Manager Agent processing request:", userMessage.content)
     const result = await manager.generate({
       prompt: userMessage.content,
-      messages: messages.slice(0, -1), // conversation history
+      messages: messages.slice(0, -1) as any, // conversation history
     })
 
     console.log("V2 Manager Agent completed:", {
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
     })
 
     // Extract UI components from tool calls
-    const uiComponents = extractUIComponents(result.steps)
+    const uiComponents = extractUIComponents(result.steps as any)
 
     // Save messages to database
     if (activeConversationId) {
@@ -172,12 +172,12 @@ export async function POST(request: NextRequest) {
         conversation_id: activeConversationId,
         role: "assistant",
         content: result.text || "",
-        steps: result.steps.map((s) => ({
-          toolCalls: s.toolCalls?.map((tc) => ({
+        steps: result.steps.map((s: any) => ({
+          toolCalls: s.toolCalls?.map((tc: any) => ({
             toolName: tc.toolName,
             args: tc.args,
           })),
-          toolResults: s.toolResults?.map((tr) => ({
+          toolResults: s.toolResults?.map((tr: any) => ({
             result: tr.result,
           })),
         })),
@@ -212,12 +212,12 @@ export async function POST(request: NextRequest) {
       message: result.text || "",
       ui_components: uiComponents,
       conversation_id: activeConversationId,
-      steps: result.steps.map((s) => ({
-        toolCalls: s.toolCalls?.map((tc) => ({
+      steps: result.steps.map((s: any) => ({
+        toolCalls: s.toolCalls?.map((tc: any) => ({
           toolName: tc.toolName,
           args: tc.args,
         })),
-        toolResults: s.toolResults?.map((tr) => ({
+        toolResults: s.toolResults?.map((tr: any) => ({
           result: tr.result,
         })),
       })),

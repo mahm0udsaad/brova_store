@@ -155,7 +155,7 @@ IMPORTANT:
           { role: "user", content: userPrompt },
         ],
         temperature: 0.8, // Higher creativity for marketing content
-        maxTokens: 2000,
+        maxOutputTokens: 2000,
       })
 
       // Validate output
@@ -256,7 +256,7 @@ Make it authentic, engaging, and true to ${platform}'s culture.`
           { role: "user", content: userPrompt },
         ],
         temperature: 0.8,
-        maxTokens: 800,
+        maxOutputTokens: 800,
       })
 
       return this.formatSuccess(

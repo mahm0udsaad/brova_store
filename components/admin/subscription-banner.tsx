@@ -58,7 +58,7 @@ export async function SubscriptionBanner() {
   } else if (planLimits && planLimits.productsUsed >= planLimits.productLimit) {
     // At product limit
     bannerType = 'error'
-    message = 'You've reached your product limit'
+    message = "You've reached your product limit"
     action = { text: 'Upgrade Now', href: '/admin/settings/billing' }
   }
 

@@ -13,7 +13,7 @@ import { createAdminClient } from "@/lib/supabase/admin"
 export const cropImage = tool({
   description:
     "Crop an image to focus on the product or to specific dimensions. Creates a new file without modifying the original.",
-  parameters: z.object({
+  inputSchema: z.object({
     image_url: z.string().describe("URL of the image to crop"),
     crop_instruction: z
       .string()
@@ -59,7 +59,7 @@ export const cropImage = tool({
 export const removeBackground = tool({
   description:
     "Remove the background from a product image to create a clean, transparent PNG. Ideal for e-commerce product photos.",
-  parameters: z.object({
+  inputSchema: z.object({
     image_url: z.string().describe("URL of the image to process"),
     merchant_id: z.string().describe("Merchant ID for ownership"),
     store_id: z.string().describe("Store ID"),
@@ -131,7 +131,7 @@ export const removeBackground = tool({
 export const enhanceImage = tool({
   description:
     "Enhance image quality by adjusting brightness, contrast, saturation, and sharpness. Makes product photos more appealing.",
-  parameters: z.object({
+  inputSchema: z.object({
     image_url: z.string().describe("URL of the image to enhance"),
     enhancement_type: z
       .enum(["auto", "brighten", "sharpen", "color_boost"])
@@ -175,7 +175,7 @@ export const enhanceImage = tool({
 export const replaceImage = tool({
   description:
     "Replace the primary image of a product draft with a different image from the product's image set.",
-  parameters: z.object({
+  inputSchema: z.object({
     draft_id: z.string().describe("Product draft ID"),
     new_primary_url: z.string().describe("URL of the new primary image"),
     merchant_id: z.string().describe("Merchant ID for ownership"),

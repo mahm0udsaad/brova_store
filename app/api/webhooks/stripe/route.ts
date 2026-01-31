@@ -122,7 +122,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         subscription_status: subscription.status,
         subscription_plan: planId,
         subscription_interval: interval,
-        subscription_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+        subscription_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
       })
       .eq('stripe_customer_id', customerId)
 
@@ -218,7 +218,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
       subscription_status: subscription.status,
       subscription_plan: planId,
       subscription_interval: interval,
-      subscription_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      subscription_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
     })
     .eq('stripe_customer_id', customerId)
 
@@ -245,7 +245,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       subscription_status: subscription.status,
       subscription_plan: planId,
       subscription_interval: interval,
-      subscription_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      subscription_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
     })
     .eq('stripe_customer_id', customerId)
 
@@ -306,13 +306,14 @@ async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
   const customerId = invoice.customer as string
 
   // Get subscription to update period end
-  if (invoice.subscription) {
-    const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string)
+  const inv = invoice as any
+  if (inv.subscription) {
+    const subscription = await stripe.subscriptions.retrieve(inv.subscription as string)
 
     await supabase
       .from('organizations')
       .update({
-        subscription_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+        subscription_period_end: new Date((subscription as any).current_period_end * 1000).toISOString(),
         subscription_status: 'active',
       })
       .eq('stripe_customer_id', customerId)

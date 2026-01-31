@@ -64,7 +64,7 @@ export interface AgentConfig {
   systemPrompt: string
   capabilities: AgentCapabilities
   tools: string[]
-  maxTokens?: number
+  maxOutputTokens?: number
 }
 
 // Agent-specific tool types
