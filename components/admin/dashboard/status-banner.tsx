@@ -14,6 +14,7 @@ import {
   ArrowRight,
   type LucideIcon 
 } from "lucide-react"
+import { useTranslations } from "next-intl"
 
 // =============================================================================
 // TYPES
@@ -188,20 +189,17 @@ export function StoreStatusBanners({
   locale = "en",
   className,
 }: StoreStatusProps) {
-  const isArabic = locale === "ar"
+  const t = useTranslations("admin.statusBanner")
 
   // No products
   if (productsCount === 0) {
     return (
       <StatusBanner
         variant="info"
-        title={isArabic ? "متجرك جاهز للمنتجات!" : "Your store is ready for products!"}
-        description={isArabic 
-          ? "أضف منتجك الأول للبدء في البيع"
-          : "Add your first product to start selling"
-        }
+        title={t("readyTitle")}
+        description={t("readyDesc")}
         action={{
-          label: isArabic ? "إضافة منتج" : "Add a product",
+          label: t("addProduct"),
           href: `/${locale}/admin/inventory`,
         }}
         className={className}
@@ -214,16 +212,10 @@ export function StoreStatusBanners({
     return (
       <StatusBanner
         variant="warning"
-        title={isArabic 
-          ? `لديك ${ordersCount} طلب${ordersCount > 1 ? "ات" : ""} قيد الانتظار`
-          : `You have ${ordersCount} pending order${ordersCount > 1 ? "s" : ""}`
-        }
-        description={isArabic
-          ? "تحقق من الطلبات الجديدة وابدأ الشحن"
-          : "Review new orders and start fulfilling"
-        }
+        title={t("pendingOrdersTitle", { count: ordersCount, s: ordersCount > 1 ? "s" : "" })}
+        description={t("pendingOrdersDesc")}
         action={{
-          label: isArabic ? "عرض الطلبات" : "View orders",
+          label: t("viewOrders"),
           href: `/${locale}/admin/orders`,
         }}
         dismissible
@@ -236,11 +228,8 @@ export function StoreStatusBanners({
   return (
     <StatusBanner
       variant="success"
-      title={isArabic ? "كل شيء يسير على ما يرام!" : "Everything is running smoothly!"}
-      description={isArabic
-        ? "لا توجد عناصر تتطلب اهتمامك الآن"
-        : "No items require your attention right now"
-      }
+      title={t("allGoodTitle")}
+      description={t("allGoodDesc")}
       dismissible
       className={className}
     />

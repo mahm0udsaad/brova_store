@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useActions } from 'ai/rsc';
+import { useActions } from '@ai-sdk/rsc';
 import { DraftGrid } from './draft-grid';
 import { ConfirmationCard } from './confirmation-card';
 import { StatusCard } from './status-card';

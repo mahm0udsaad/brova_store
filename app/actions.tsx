@@ -1,6 +1,6 @@
 'use server'
 
-import { createAI, getMutableAIState, streamUI } from 'ai/rsc'
+import { createAI, getMutableAIState, streamUI } from '@ai-sdk/rsc'
 import { nanoid } from 'nanoid';
 import type { ReactNode } from 'react';
 
@@ -60,7 +60,7 @@ async function submitUserMessage(userInput: string, context: AgentContext) {
   ]);
 
   // Check for initial greeting request (onboarding flow)
-  if (context.is_initial_greeting) {
+  if ('is_initial_greeting' in context && context.is_initial_greeting) {
     const greetingContent = context.locale === 'ar'
       ? 'مرحباً! أنا هنا لمساعدتك في إنشاء متجرك. دعنا نبدأ بتحميل بعض صور المنتجات.'
       : 'Welcome! I\'m here to help set up your store. Let\'s start by uploading some product images.'
@@ -251,13 +251,7 @@ async function requestApproval(draftIds: string[], context: AgentContext) {
         draftIds={draftIds}
         totalProducts={totalProducts}
         locale={context.locale as 'en' | 'ar'}
-        onConfirm={async (ids) => {
-          // This will be called client-side via the ConfirmationCard
-          // The actual persistence happens through confirmAndPersistDrafts
-        }}
-        onCancel={() => {
-
-        }}
+        context={context}
       />
     ),
   };
@@ -452,7 +446,16 @@ async function advanceWorkflowForContext(
   }
 }
 
-// Define the AI provider with the initial states and server actions.
+// Export server actions individually
+export {
+  submitUserMessage,
+  requestApproval,
+  confirmAndPersistDrafts,
+  updateDraftAction,
+  discardDraftsAction,
+};
+
+// Export the AI provider
 export const AI = createAI<AIState, UIState>({
   actions: {
     submitUserMessage,

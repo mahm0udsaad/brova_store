@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
+import { useActions } from "@ai-sdk/rsc"
 import { cn } from "@/lib/utils"
 import { AlertTriangle, CheckCircle, XCircle, Loader2 } from "lucide-react"
 
@@ -11,8 +12,7 @@ interface ConfirmationCardProps {
   draftIds: string[]
   totalProducts: number
   locale?: "en" | "ar"
-  onConfirm: (draftIds: string[]) => void
-  onCancel: () => void
+  context?: Record<string, unknown>
 }
 
 export function ConfirmationCard({
@@ -21,15 +21,19 @@ export function ConfirmationCard({
   draftIds,
   totalProducts,
   locale = "en",
-  onConfirm,
-  onCancel,
+  context,
 }: ConfirmationCardProps) {
   const [state, setState] = useState<"idle" | "confirming" | "done">("idle")
+  const { confirmAndPersistDrafts, discardDraftsAction } = useActions()
   const isRtl = locale === "ar"
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     setState("confirming")
-    onConfirm(draftIds)
+    await confirmAndPersistDrafts(draftIds, context)
+  }
+
+  const handleCancel = async () => {
+    await discardDraftsAction(draftIds)
   }
 
   return (
@@ -72,7 +76,7 @@ export function ConfirmationCard({
             </button>
 
             <button
-              onClick={onCancel}
+              onClick={handleCancel}
               disabled={state !== "idle"}
               className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground transition-all hover:bg-muted"
             >

@@ -1,6 +1,6 @@
 "use client"
 
-import { useAdminAssistant } from "@/components/admin-assistant/AdminAssistantProvider"
+import { useAdminAssistantState } from "@/components/admin-assistant/AdminAssistantProvider"
 import { AdminSidebar } from "@/components/admin/AdminSidebar"
 import { AdminAssistantSidePanel } from "@/components/admin-assistant/AdminAssistantSidePanel"
 import { AdminHeader } from "@/components/admin/AdminHeader"
@@ -14,7 +14,7 @@ interface AdminShellProps {
 }
 
 export function AdminShell({ children, storeName, storeStatus = "draft", storeSlug = "" }: AdminShellProps) {
-  const { displayMode } = useAdminAssistant()
+  const { displayMode } = useAdminAssistantState() // Only subscribes to state, no actions needed
   const isSidePanelOpen = displayMode === "side-panel"
 
   return (

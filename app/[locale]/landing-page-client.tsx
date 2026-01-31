@@ -108,19 +108,28 @@ export default function LandingPageClient() {
               {t("hero.subtext")}
             </motion.p>
             
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
               className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4"
             >
-              <Link href={`/${locale}/admin-login`}>
-                <Button 
-                  size="lg" 
+              <Link href={`/${locale}/signup`}>
+                <Button
+                  size="lg"
                   className="rounded-full px-10 h-14 text-lg font-bold shadow-xl shadow-primary/20 hover:shadow-2xl hover:shadow-primary/30 transition-all"
                 >
-                  {t("hero.cta")} 
+                  {t("hero.cta")}
                   <ArrowRight className={`h-5 w-5 ${isRtl ? 'mr-2 rotate-180' : 'ml-2'}`} />
+                </Button>
+              </Link>
+              <Link href={`/${locale}/admin-login`}>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="rounded-full px-10 h-14 text-lg font-bold"
+                >
+                  {t("hero.signin")}
                 </Button>
               </Link>
             </motion.div>

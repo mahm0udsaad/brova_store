@@ -67,8 +67,10 @@ export function DraftApprovalScreen({ onBack }: DraftApprovalScreenProps) {
         // Mark onboarding as completed
         await completeOnboarding()
         
-        // Redirect to admin dashboard
-        router.push(`/${locale}/admin`)
+        // Redirect to admin dashboard (deferred to avoid render phase update)
+        setTimeout(() => {
+          router.push(`/${locale}/admin`)
+        }, 0)
       } else {
         setError(t("approval.error"))
       }

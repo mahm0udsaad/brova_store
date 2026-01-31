@@ -60,8 +60,10 @@ Actions:
     Example: { productId: "$step:step_1.productId", quantity: 10 }
 
   • bulk_update_stock_quantity - Update stock quantity for multiple or all products
-    Params: { quantity: number, productIds?: string[] }
+    Params: { quantity: number, productIds?: string[], filterByQuantity?: number }
     If productIds is omitted, updates ALL products in the store
+    Use filterByQuantity to only update products with a specific current stock quantity
+    Example: { quantity: 10, filterByQuantity: 5 } → updates all products at stock=5 to stock=10
 
 ═══════════════════════════════════════════════════════
 PHOTOGRAPHER AGENT - Image generation and processing
@@ -501,20 +503,38 @@ Available capabilities: ${legacyContext.capabilities.join(", ")}${adminContext}
 
       console.log("Manager agent raw response:", result.text)
 
-      // Parse the response
+      // Parse the response — handle cases where the model returns multiple JSON objects
       let parsed: any
       try {
-        // Try to extract JSON from the response
-        const jsonMatch = result.text.match(/\{[\s\S]*\}/)
-        if (jsonMatch) {
-          parsed = JSON.parse(jsonMatch[0])
-        } else {
-          // No JSON found, treat as conversational response
+        parsed = JSON.parse(result.text.trim())
+      } catch {
+        try {
+          // Extract the first complete JSON object using balanced brace matching
+          const text = result.text
+          let depth = 0
+          let start = -1
+          let end = -1
+          for (let i = 0; i < text.length; i++) {
+            if (text[i] === '{') {
+              if (depth === 0) start = i
+              depth++
+            } else if (text[i] === '}') {
+              depth--
+              if (depth === 0 && start !== -1) {
+                end = i + 1
+                break
+              }
+            }
+          }
+          if (start !== -1 && end !== -1) {
+            parsed = JSON.parse(text.slice(start, end))
+          } else {
+            parsed = { response: result.text, plan: null }
+          }
+        } catch (parseError) {
+          console.error("Failed to parse manager response:", parseError)
           parsed = { response: result.text, plan: null }
         }
-      } catch (parseError) {
-        console.error("Failed to parse manager response:", parseError)
-        parsed = { response: result.text, plan: null }
       }
 
       // Ensure we have a valid response

@@ -4,7 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import type React from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback, memo } from 'react'
 import { Heart, ShoppingBag } from 'lucide-react'
 import { triggerHaptic, playSuccessSound } from '@/lib/haptics'
 import { toggleFavorite, isFavorite } from '@/lib/favorites'
@@ -15,7 +15,66 @@ import { ProductCardProps } from '../types'
 import { getLocalizedProductText, mapStorefrontProductToCartProduct } from './utils'
 import { useTranslations } from 'next-intl'
 
-export function ClothingStoreV2ProductCard({ product, locale }: ProductCardProps) {
+const FavoriteButton = memo(function FavoriteButton({
+  isFav,
+  onToggle,
+  label,
+}: {
+  isFav: boolean
+  onToggle: (e: React.MouseEvent) => void
+  label: string
+}) {
+  return (
+    <motion.button
+      whileTap={{ scale: 0.9 }}
+      onClick={onToggle}
+      className={cn(
+        'w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md transition-all',
+        isFav
+          ? 'bg-red-500/30 text-red-500 border border-red-500/30'
+          : 'bg-white/20 text-white border border-white/20',
+      )}
+      aria-label={label}
+    >
+      <Heart className={cn('w-5 h-5', isFav && 'fill-current')} />
+    </motion.button>
+  )
+})
+
+const AddToCartButton = memo(function AddToCartButton({
+  isPurchasable,
+  showAdded,
+  onAdd,
+  label,
+}: {
+  isPurchasable: boolean
+  showAdded: boolean
+  onAdd: (e: React.MouseEvent) => void
+  label: string
+}) {
+  return (
+    <motion.button
+      whileTap={{ scale: 0.9 }}
+      onClick={onAdd}
+      className={cn(
+        'w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 transition-all',
+        isPurchasable ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white/10 text-white/50',
+      )}
+      aria-label={label}
+      aria-disabled={!isPurchasable}
+    >
+      {showAdded ? (
+        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-green-400">
+          ✓
+        </motion.div>
+      ) : (
+        <ShoppingBag className="w-5 h-5" />
+      )}
+    </motion.button>
+  )
+})
+
+export const ClothingStoreV2ProductCard = memo(function ClothingStoreV2ProductCard({ product, locale }: ProductCardProps) {
   const t = useTranslations('product')
   const { addToCart } = useCart()
   const [isFav, setIsFav] = useState(false)
@@ -30,7 +89,7 @@ export function ClothingStoreV2ProductCard({ product, locale }: ProductCardProps
     setIsFav(isFavorite(product.id))
   }, [product.id])
 
-  const handleFavoriteToggle = (e: React.MouseEvent) => {
+  const handleFavoriteToggle = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     triggerHaptic('medium')
@@ -39,9 +98,9 @@ export function ClothingStoreV2ProductCard({ product, locale }: ProductCardProps
     if (newState) {
       playSuccessSound()
     }
-  }
+  }, [product.id])
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     if (!isPurchasable) return
@@ -56,11 +115,11 @@ export function ClothingStoreV2ProductCard({ product, locale }: ProductCardProps
         setShowAdded(false)
       }, 1500)
     }
-  }
+  }, [isPurchasable, cartProduct, addToCart])
 
-  const handleTap = () => {
+  const handleTap = useCallback(() => {
     triggerHaptic('light')
-  }
+  }, [])
 
   return (
     <motion.div
@@ -73,7 +132,6 @@ export function ClothingStoreV2ProductCard({ product, locale }: ProductCardProps
     >
       <Link href={href} className="group block" onClick={handleTap}>
         <motion.div
-          layoutId={`product-image-${product.id}`}
           className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-muted mb-3"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
@@ -92,38 +150,17 @@ export function ClothingStoreV2ProductCard({ product, locale }: ProductCardProps
             blurDataURL={blurPlaceholders.product}
           />
           <div className="absolute top-3 ltr:left-3 rtl:right-3 flex flex-col gap-2 z-10">
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={handleFavoriteToggle}
-              className={cn(
-                'w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md transition-all',
-                isFav
-                  ? 'bg-red-500/30 text-red-500 border border-red-500/30'
-                  : 'bg-white/20 text-white border border-white/20',
-              )}
-              aria-label={isFav ? t('removeFavorite') : t('addFavorite')}
-            >
-              <Heart className={cn('w-5 h-5', isFav && 'fill-current')} />
-            </motion.button>
-
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={handleAddToCart}
-              className={cn(
-                'w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 transition-all',
-                isPurchasable ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-white/10 text-white/50',
-              )}
-              aria-label={t('addToCart')}
-              aria-disabled={!isPurchasable}
-            >
-              {showAdded ? (
-                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-green-400">
-                  ✓
-                </motion.div>
-              ) : (
-                <ShoppingBag className="w-5 h-5" />
-              )}
-            </motion.button>
+            <FavoriteButton
+              isFav={isFav}
+              onToggle={handleFavoriteToggle}
+              label={isFav ? t('removeFavorite') : t('addFavorite')}
+            />
+            <AddToCartButton
+              isPurchasable={isPurchasable}
+              showAdded={showAdded}
+              onAdd={handleAddToCart}
+              label={t('addToCart')}
+            />
           </div>
 
           <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -132,7 +169,6 @@ export function ClothingStoreV2ProductCard({ product, locale }: ProductCardProps
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
-          layoutId={`product-info-${product.id}`}
         >
           {isPurchasable ? (
             <p className="text-lg font-semibold text-foreground">
@@ -146,4 +182,4 @@ export function ClothingStoreV2ProductCard({ product, locale }: ProductCardProps
       </Link>
     </motion.div>
   )
-}
+})

@@ -1,27 +1,15 @@
 import { generateText, generateObject, streamText } from "ai"
-import { z, type ZodSchema } from "zod"
+import { createGateway } from "@ai-sdk/gateway"
+import { type ZodSchema } from "zod"
 
-/**
- * Vercel AI Gateway Configuration
- * 
- * Uses Vercel's unified AI Gateway which automatically routes requests when:
- * - AI_GATEWAY_API_KEY environment variable is set
- * - Model identifier uses the format: provider/model-name
- * 
- * Documentation: https://vercel.com/docs/ai-gateway/capabilities/image-generation/ai-sdk
- */
+const gw = createGateway({
+  apiKey: process.env.AI_GATEWAY_API_KEY ?? "",
+})
 
-// Model registry with Vercel AI Gateway format (provider/model-name)
-// Nano Banana models support multimodal text + image generation
 export const models = {
-  // Multimodal model with image generation capabilities
-  // Fast and efficient for orchestration and image analysis
-  pro: "openai/gpt-5.2" as any,
-  flash: "google/gemini-3-flash" as any,
-  vision: "google/gemini-2.5-flash-image" as any,
-  
-  // Higher quality image generation (use if needed for better outputs)
-  // pro: "google/gemini-3-pro-image",
+  pro: gw("openai/gpt-5.2"),
+  flash: gw("google/gemini-3-flash"),
+  vision: gw("google/gemini-2.5-flash-image"),
 }
 
 // Type for generation options

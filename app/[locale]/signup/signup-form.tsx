@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { signUp } from '@/lib/actions/auth'
+import { GoogleSignInButton } from '@/components/auth/google-signin-button'
 
 export default function SignupForm({ locale }: { locale: string }) {
   const t = useTranslations('auth.signup')
@@ -81,6 +82,23 @@ export default function SignupForm({ locale }: { locale: string }) {
           <p className="text-gray-600 dark:text-gray-400">
             {t('subtitle')}
           </p>
+        </div>
+
+        {/* Google Sign-In */}
+        <div className="mb-6">
+          <GoogleSignInButton locale={locale} label={t('googleSignup')} />
+        </div>
+
+        {/* Divider */}
+        <div className="relative mb-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+              {t('orEmail')}
+            </span>
+          </div>
         </div>
 
         {/* Form */}

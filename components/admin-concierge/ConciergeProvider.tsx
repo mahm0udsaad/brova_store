@@ -28,7 +28,7 @@ import {
 import {
   updateOnboardingStatus as persistOnboardingStatus,
 } from "@/lib/actions/setup"
-import { AI } from "@/app/actions"
+// AI provider moved to ConciergeGate to avoid setState-during-render warning
 // Removed: import { useAgentStream } from "@/hooks/use-agent-stream"
 // Removed: import { useWorkflowState } from "./hooks/useWorkflowState"
 // Removed: import { useToolHandlers } from "./hooks/useToolHandlers"
@@ -186,9 +186,10 @@ export function ConciergeProvider({
       //   setMessages(JSON.parse(storedMessages))
       // }
       
-      // Restore onboarding status
+      // Restore onboarding status — only restore 'in_progress', never override
+      // server-provided status with stale 'skipped'/'completed' from sessionStorage
       const storedStatus = sessionStorage.getItem(STORAGE_KEYS.ONBOARDING_STATUS)
-      if (storedStatus) {
+      if (storedStatus === 'in_progress') {
         setOnboardingStatus(storedStatus as OnboardingStatus)
       }
       
@@ -253,8 +254,10 @@ export function ConciergeProvider({
       console.error("Failed to persist skipped status:", error)
     }
     
-    // Redirect to admin dashboard
-    router.push(`/${locale}/admin`)
+    // Redirect to admin dashboard (deferred to avoid render phase update)
+    setTimeout(() => {
+      router.push(`/${locale}/admin`)
+    }, 0)
   }, [locale, router])
   
   const completeOnboarding = useCallback(async () => {
@@ -453,11 +456,9 @@ export function ConciergeProvider({
   ])
   
   return (
-    <AI>
-      <ConciergeContext.Provider value={value}>
-        {children}
-      </ConciergeContext.Provider>
-    </AI>
+    <ConciergeContext.Provider value={value}>
+      {children}
+    </ConciergeContext.Provider>
   )
 }
 

@@ -1,9 +1,8 @@
 "use client"
 
-import { createContext, useContext, useState, useCallback, ReactNode, useRef, useEffect } from "react"
+import { createContext, useContext, useState, useCallback, ReactNode, useRef, useEffect, useMemo } from "react"
 import { AdminAssistantFab } from "./AdminAssistantFab"
 import { AdminAssistantPanel } from "./AdminAssistantPanel"
-import { AdminAssistantSidePanel } from "./AdminAssistantSidePanel"
 import { useAICommands } from "@/hooks/use-ai-commands"
 
 export type AssistantDisplayMode = "collapsed" | "panel" | "side-panel"
@@ -65,18 +64,23 @@ export interface Message {
   retryable?: boolean // Whether the message can be retried
 }
 
-interface AdminAssistantContextType {
-  displayMode: AssistantDisplayMode
+// Split into stable actions and reactive state to prevent unnecessary re-renders
+interface AdminAssistantActionsContextType {
   setDisplayMode: (mode: AssistantDisplayMode) => void
-  isOpen: boolean
   open: () => void
   close: () => void
   toggle: () => void
-  messages: Message[]
   sendMessage: (content: string, images?: string[]) => Promise<void>
+  setPageContext: (context: PageContext | null) => void
+  startNewChat: () => void
+}
+
+interface AdminAssistantStateContextType {
+  displayMode: AssistantDisplayMode
+  isOpen: boolean
+  messages: Message[]
   isLoading: boolean
   pageContext: PageContext | null
-  setPageContext: (context: PageContext | null) => void
   screenshotCount: number
   maxScreenshots: number
   // AI activity tracking for background processes
@@ -85,14 +89,32 @@ interface AdminAssistantContextType {
   currentAgent: string | null
 }
 
-const AdminAssistantContext = createContext<AdminAssistantContextType | null>(null)
+const AdminAssistantActionsContext = createContext<AdminAssistantActionsContextType | null>(null)
+const AdminAssistantStateContext = createContext<AdminAssistantStateContextType | null>(null)
 
-export function useAdminAssistant() {
-  const context = useContext(AdminAssistantContext)
+// Hook for stable actions only (won't re-render when messages change)
+export function useAdminAssistantActions() {
+  const context = useContext(AdminAssistantActionsContext)
   if (!context) {
-    throw new Error("useAdminAssistant must be used within AdminAssistantProvider")
+    throw new Error("useAdminAssistantActions must be used within AdminAssistantProvider")
   }
   return context
+}
+
+// Hook for reactive state only
+export function useAdminAssistantState() {
+  const context = useContext(AdminAssistantStateContext)
+  if (!context) {
+    throw new Error("useAdminAssistantState must be used within AdminAssistantProvider")
+  }
+  return context
+}
+
+// Combined hook for backward compatibility (components that need both)
+export function useAdminAssistant() {
+  const actions = useAdminAssistantActions()
+  const state = useAdminAssistantState()
+  return { ...actions, ...state }
 }
 
 interface AdminAssistantProviderProps {
@@ -111,9 +133,8 @@ export function AdminAssistantProvider({ children }: AdminAssistantProviderProps
     },
   ])
   const [isLoading, setIsLoading] = useState(false)
-  const [isLoadingConversation, setIsLoadingConversation] = useState(true)
   const [pageContext, setPageContext] = useState<PageContext | null>(null)
-  const [screenshotCount, setScreenshotCount] = useState(0)
+  const screenshotCount = 0
   const maxScreenshots = 5
 
   // Track uploaded images in this conversation session for follow-up messages
@@ -125,84 +146,23 @@ export function AdminAssistantProvider({ children }: AdminAssistantProviderProps
   const [currentAgent, setCurrentAgent] = useState<string | null>(null)
 
   // Enable AI commands for real-time UI control
-  useAICommands({
-    onCommandExecuted: (command, result) => {
-      console.log("AI command executed:", command, result)
-    },
-    onCommandFailed: (command, error) => {
-      console.error("AI command failed:", command, error)
-    },
-  })
-
-  // Load conversation history on mount
-  useEffect(() => {
-    const loadConversation = async () => {
-      try {
-        const response = await fetch("/api/admin/assistant/conversation")
-        if (response.ok) {
-          const data = await response.json()
-          if (data.conversation && data.messages.length > 0) {
-            setConversationId(data.conversation.id)
-            // Convert database messages to Message type
-            const loadedMessages: Message[] = data.messages.map((msg: any) => ({
-              id: msg.id,
-              role: msg.role,
-              content: msg.content,
-              timestamp: new Date(msg.created_at),
-              images: msg.images || undefined,
-              steps: msg.steps || undefined,
-              isThinking: msg.thinking || false,
-              toolInvocations: msg.metadata?.toolInvocations,
-              isError: msg.metadata?.isError,
-              retryable: msg.metadata?.retryable,
-            }))
-            setMessages(loadedMessages)
-          }
-        }
-      } catch (error) {
-        console.error("Failed to load conversation:", error)
-      } finally {
-        setIsLoadingConversation(false)
-      }
-    }
-
-    loadConversation()
+  const handleCommandExecuted = useCallback((command: unknown, result: unknown) => {
+    console.log("AI command executed:", command, result)
   }, [])
 
-  // Save new messages to database (debounced)
-  useEffect(() => {
-    // Skip saving if still loading or no real messages
-    if (isLoadingConversation || messages.length === 0) return
+  const handleCommandFailed = useCallback((command: unknown, error: unknown) => {
+    console.error("AI command failed:", command, error)
+  }, [])
 
-    // Skip if only welcome message
-    if (messages.length === 1 && messages[0].id === "welcome") return
+  useAICommands({
+    onCommandExecuted: handleCommandExecuted,
+    onCommandFailed: handleCommandFailed,
+  })
 
-    // Debounce saving
-    const timeoutId = setTimeout(async () => {
-      try {
-        // Only save user and assistant messages (not thinking/temporary messages)
-        const messagesToSave = messages.filter(
-          (msg) => !msg.id.startsWith("thinking-") && msg.id !== "welcome"
-        )
+  // Always start with a fresh conversation - no loading from database
 
-        if (messagesToSave.length === 0) return
-
-        await fetch("/api/admin/assistant/conversation", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            conversationId,
-            messages: messagesToSave.slice(-2), // Only save the last 2 messages to avoid duplicates
-            title: "AI Manager Conversation",
-          }),
-        })
-      } catch (error) {
-        console.error("Failed to save conversation:", error)
-      }
-    }, 1000) // Wait 1 second after last message before saving
-
-    return () => clearTimeout(timeoutId)
-  }, [messages, conversationId, isLoadingConversation])
+  // Messages are only saved when explicitly starting a new chat
+  // Auto-save is disabled to prevent re-renders and performance issues
 
   const isOpen = displayMode !== "collapsed"
 
@@ -216,6 +176,39 @@ export function AdminAssistantProvider({ children }: AdminAssistantProviderProps
 
   const toggle = useCallback(() => {
     setDisplayMode((prev) => (prev === "collapsed" ? "panel" : "collapsed"))
+  }, [])
+
+  const startNewChat = useCallback(() => {
+    // Use refs to avoid dependencies that cause re-renders
+    const currentMessages = messagesRef.current
+    const currentConversationId = conversationIdRef.current
+
+    // Reset conversation state immediately for instant UI response
+    setConversationId(null)
+    setMessages([
+      {
+        id: "welcome",
+        role: "assistant",
+        content: "Hey! I'm your AI Manager Assistant. 👋\n\nI can help you:\n• **Create products** from images\n• **Generate marketing content** and captions\n• **Process images** in bulk (remove backgrounds, create lifestyle shots)\n• **Analyze sales data** and insights\n• **Automate workflows** and tasks\n• **Update product inventory and stock quantities**\n\nWhat would you like to work on today?",
+        timestamp: new Date(),
+      },
+    ])
+    setConversationImages([])
+
+    // Save previous conversation in the background (don't await)
+    if (currentMessages.length > 1 && currentConversationId) {
+      fetch("/api/admin/assistant/conversation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conversationId: currentConversationId,
+          messages: currentMessages.filter((msg) => msg.id !== "welcome"),
+          title: `Chat - ${new Date().toLocaleDateString()}`,
+        }),
+      }).catch((error) => {
+        console.error("Failed to save conversation:", error)
+      })
+    }
   }, [])
 
   /**
@@ -313,6 +306,19 @@ export function AdminAssistantProvider({ children }: AdminAssistantProviderProps
     }
   }, [])
 
+  // Use refs to stabilize sendMessage callback
+  const messagesRef = useRef(messages)
+  const pageContextRef = useRef(pageContext)
+  const conversationImagesRef = useRef(conversationImages)
+  const conversationIdRef = useRef(conversationId)
+
+  useEffect(() => {
+    messagesRef.current = messages
+    pageContextRef.current = pageContext
+    conversationImagesRef.current = conversationImages
+    conversationIdRef.current = conversationId
+  }, [messages, pageContext, conversationImages, conversationId])
+
   const sendMessage = useCallback(async (content: string, images?: string[]) => {
     const userMessage: Message = {
       id: `user-${Date.now()}`,
@@ -322,10 +328,9 @@ export function AdminAssistantProvider({ children }: AdminAssistantProviderProps
       images: images && images.length > 0 ? images : undefined,
     }
 
-    setMessages((prev) => [...prev, userMessage])
     setIsLoading(true)
 
-    // Add a thinking placeholder message with real-time steps
+    // Add user + thinking placeholder in one render pass
     const thinkingId = `thinking-${Date.now()}`
     const thinkingMessage: Message = {
       id: thinkingId,
@@ -335,46 +340,46 @@ export function AdminAssistantProvider({ children }: AdminAssistantProviderProps
       isThinking: true,
       steps: [],
     }
-    setMessages((prev) => [...prev, thinkingMessage])
+    setMessages((prev) => [...prev, userMessage, thinkingMessage])
 
     try {
       // Determine which images to send:
       // 1. New images if provided
       // 2. Otherwise, use conversation images from previous uploads
       // 3. Or use available images from page context
-      const imagesToSend = images && images.length > 0 
-        ? images 
+      const imagesToSend = images && images.length > 0
+        ? images
         : undefined
-      
+
       // Include conversation image URLs in page context for the AI to reference
-      const enhancedPageContext = pageContext ? {
-        ...pageContext,
+      const enhancedPageContext = pageContextRef.current ? {
+        ...pageContextRef.current,
         availableImages: [
-          ...(pageContext.availableImages || []),
-          ...conversationImages,
+          ...(pageContextRef.current.availableImages || []),
+          ...conversationImagesRef.current,
         ].filter((v, i, a) => a.indexOf(v) === i), // Remove duplicates
         contextData: {
-          ...pageContext.contextData,
-          conversationImages: conversationImages.length > 0 ? conversationImages : undefined,
+          ...pageContextRef.current.contextData,
+          conversationImages: conversationImagesRef.current.length > 0 ? conversationImagesRef.current : undefined,
         },
       } : null
 
       // Use the streaming endpoint for real-time updates
       const response = await fetch("/api/admin/assistant/stream", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
         },
         credentials: "include",
         body: JSON.stringify({
-          messages: [...messages, userMessage].map((m) => ({
+          messages: [...messagesRef.current, userMessage].map((m) => ({
             role: m.role,
             content: m.content,
           })),
           pageContext: enhancedPageContext,
           images: imagesToSend,
           // Also send stored image URLs for reference (when no new images attached)
-          storedImageUrls: !imagesToSend && conversationImages.length > 0 ? conversationImages : undefined,
+          storedImageUrls: !imagesToSend && conversationImagesRef.current.length > 0 ? conversationImagesRef.current : undefined,
         }),
       })
 
@@ -483,15 +488,8 @@ export function AdminAssistantProvider({ children }: AdminAssistantProviderProps
         }
       }
 
-      // Capture bulk progress from thinking message before removing it
-      let lastBulkProgress: BulkProgressData | undefined
-      setMessages((prev) => {
-        const thinkingMsg = prev.find((m) => m.id === thinkingId)
-        lastBulkProgress = thinkingMsg?.bulkProgress
-        return prev.filter((m) => m.id !== thinkingId)
-      })
-
       if (finalResponse) {
+        // Capture bulk progress and replace thinking message in one update
         const assistantMessage: Message = {
           id: `assistant-${Date.now()}`,
           role: "assistant",
@@ -499,9 +497,13 @@ export function AdminAssistantProvider({ children }: AdminAssistantProviderProps
           timestamp: new Date(),
           toolInvocations: finalResponse.toolInvocations,
           steps: finalResponse.steps || currentSteps,
-          bulkProgress: lastBulkProgress,
+          bulkProgress: undefined,
         }
-        setMessages((prev) => [...prev, assistantMessage])
+        setMessages((prev) => {
+          const thinkingMsg = prev.find((m) => m.id === thinkingId)
+          const lastBulkProgress = thinkingMsg?.bulkProgress
+          return [...prev.filter((m) => m.id !== thinkingId), { ...assistantMessage, bulkProgress: lastBulkProgress }]
+        })
 
         // Execute any UI commands from the response
         if (finalResponse.uiCommands && Array.isArray(finalResponse.uiCommands)) {
@@ -515,16 +517,17 @@ export function AdminAssistantProvider({ children }: AdminAssistantProviderProps
           content: "I completed the task but couldn't generate a summary.",
           timestamp: new Date(),
           steps: currentSteps,
-          bulkProgress: lastBulkProgress,
+          bulkProgress: undefined,
         }
-        setMessages((prev) => [...prev, assistantMessage])
+        setMessages((prev) => {
+          const thinkingMsg = prev.find((m) => m.id === thinkingId)
+          const lastBulkProgress = thinkingMsg?.bulkProgress
+          return [...prev.filter((m) => m.id !== thinkingId), { ...assistantMessage, bulkProgress: lastBulkProgress }]
+        })
       }
 
     } catch (error) {
       console.error("Assistant streaming error:", error)
-      // Remove thinking message
-      setMessages((prev) => prev.filter((m) => m.id !== thinkingId))
-      
       const errorMessageObj: Message = {
         id: `error-${Date.now()}`,
         role: "assistant",
@@ -533,30 +536,30 @@ export function AdminAssistantProvider({ children }: AdminAssistantProviderProps
         isError: true,
         retryable: true,
       }
-      setMessages((prev) => [...prev, errorMessageObj])
+      setMessages((prev) => [...prev.filter((m) => m.id !== thinkingId), errorMessageObj])
     } finally {
       setIsLoading(false)
       setIsGenerating(false)
       setCurrentActivity(null)
       setCurrentAgent(null)
     }
-  }, [messages, pageContext, executeUICommands])
+  }, [executeUICommands]) // Only depends on executeUICommands now, uses refs for messages/pageContext
 
   // Listen for AI product creation requests from UI
   useEffect(() => {
     const handleCreateProductsRequest = (event: CustomEvent) => {
       const { imageUrls, autoFill } = event.detail
-      
+
       // Open the assistant panel if not already open
       if (displayMode === "collapsed") {
         setDisplayMode("panel")
       }
-      
+
       // Send a message to the AI to create products
       const message = autoFill
         ? `قم بإنشاء منتجات جديدة من هذه الصور المعالجة وأكمل كل التفاصيل تلقائياً (الاسم، الوصف، السعر المقترح). الصور: ${imageUrls.length} صورة`
         : `ساعدني في إنشاء منتجات من هذه الصور: ${imageUrls.length} صورة`
-      
+
       // Update page context with available images
       setPageContext((prev) => prev ? {
         ...prev,
@@ -567,7 +570,7 @@ export function AdminAssistantProvider({ children }: AdminAssistantProviderProps
           autoFillRequested: autoFill,
         },
       } : null)
-      
+
       // Trigger the message send
       setTimeout(() => {
         sendMessage(message)
@@ -579,33 +582,43 @@ export function AdminAssistantProvider({ children }: AdminAssistantProviderProps
     return () => {
       window.removeEventListener("ai-create-products-request" as any, handleCreateProductsRequest)
     }
-  }, [displayMode, sendMessage, setPageContext])
+  }, [displayMode, sendMessage]) // sendMessage is now stable
 
-  const value: AdminAssistantContextType = {
-    displayMode,
+  // Split context values - stable actions won't cause re-renders
+  // All functions are stable: state setters + useCallback with empty/stable deps
+  const actions = useMemo<AdminAssistantActionsContextType>(() => ({
     setDisplayMode,
-    isOpen,
     open,
     close,
     toggle,
-    messages,
     sendMessage,
+    setPageContext,
+    startNewChat,
+  }), [open, close, toggle, sendMessage, startNewChat])
+
+  const state = useMemo<AdminAssistantStateContextType>(() => ({
+    displayMode,
+    isOpen,
+    messages,
     isLoading,
     pageContext,
-    setPageContext,
     screenshotCount,
     maxScreenshots,
     isGenerating,
     currentActivity,
     currentAgent,
-  }
+  }), [displayMode, isOpen, messages, isLoading, pageContext, screenshotCount, maxScreenshots, isGenerating, currentActivity, currentAgent])
 
   return (
-    <AdminAssistantContext.Provider value={value}>
-      {children}
-      <AdminAssistantFab />
-      {displayMode === "panel" && <AdminAssistantPanel />}
-      {/* Side panel is now handled by the layout for better integration */}
-    </AdminAssistantContext.Provider>
+    <AdminAssistantActionsContext.Provider value={actions}>
+      <AdminAssistantStateContext.Provider value={state}>
+        {children}
+        <AdminAssistantFab />
+        {displayMode === "panel" ? (
+          <AdminAssistantPanel />
+        ) : null}
+        {/* Side panel is now handled by the layout for better integration */}
+      </AdminAssistantStateContext.Provider>
+    </AdminAssistantActionsContext.Provider>
   )
 }

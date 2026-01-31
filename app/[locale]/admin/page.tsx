@@ -1,6 +1,7 @@
-import { createClient } from "@/lib/supabase/server"
-import { getAdminStoreContext, getStoreProductStats } from "@/lib/supabase/queries/admin-store"
+import { getAdminStoreContext } from "@/lib/supabase/queries/admin-store"
+import { getDashboardStats } from "@/lib/supabase/queries/admin-dashboard"
 import { Suspense } from "react"
+import { redirect } from "next/navigation"
 import { getTranslations } from "next-intl/server"
 import { BilingualWelcomeSection } from "@/components/admin/dashboard/welcome-section"
 import { SkeletonStats } from "@/components/ui/skeleton"
@@ -11,68 +12,17 @@ export const dynamic = "force-dynamic"
 export const revalidate = 30 // Revalidate every 30 seconds
 
 // =============================================================================
-// DATA FETCHING
-// =============================================================================
-
-async function getDashboardStats(storeId: string) {
-  const supabase = await createClient()
-
-  try {
-    // Parallelize all stat queries including product stats
-    const [
-      productStats,
-      { count: totalUsers },
-      { count: tryOnUsage },
-      { count: totalOrders },
-      { count: pendingOrders },
-      { count: deliveredOrders },
-    ] = await Promise.all([
-      getStoreProductStats(storeId),
-      supabase.from("profiles").select("*", { count: "exact", head: true }),
-      supabase.from("try_on_history").select("*", { count: "exact", head: true }),
-      supabase.from("orders").select("*", { count: "exact", head: true }),
-      supabase.from("orders").select("*", { count: "exact", head: true }).in("status", ["pending", "confirmed"]),
-      supabase.from("orders").select("*", { count: "exact", head: true }).eq("status", "delivered"),
-    ])
-
-    return {
-      totalProducts: productStats.total,
-      activeProducts: productStats.active,
-      draftProducts: productStats.draft,
-      totalUsers: totalUsers ?? 0,
-      tryOnUsage: tryOnUsage ?? 0,
-      totalOrders: totalOrders ?? 0,
-      pendingOrders: pendingOrders ?? 0,
-      deliveredOrders: deliveredOrders ?? 0,
-    }
-  } catch (error) {
-    console.error("Error loading dashboard stats:", error)
-    return null
-  }
-}
-
-// =============================================================================
 // COMPONENTS
 // =============================================================================
 
-async function DashboardContent({ 
-  locale, 
+async function DashboardContent({
+  locale,
   t,
-  storeId,
-}: { 
+}: {
   locale: string
   t: Awaited<ReturnType<typeof getTranslations>>
-  storeId: string
 }) {
-  const stats = await getDashboardStats(storeId)
-
-  if (!stats) {
-    return (
-      <div className="rounded-2xl border border-destructive/30 bg-destructive/10 p-5">
-        <p className="text-sm text-destructive">{t("dashboardStats.loadError")}</p>
-      </div>
-    )
-  }
+  const stats = await getDashboardStats()
 
   // Prepare translations for client component
   const translations = {
@@ -97,9 +47,21 @@ async function DashboardContent({
     new: t("dashboard.actions.new"),
   }
 
+  // Transform stats to match client component expectations
+  const transformedStats = {
+    totalProducts: stats.products.total,
+    activeProducts: stats.products.active,
+    draftProducts: stats.products.draft,
+    totalUsers: stats.customers.total,
+    tryOnUsage: 0, // Not in new stats, keep for compatibility
+    totalOrders: stats.orders.total,
+    pendingOrders: stats.orders.pending,
+    deliveredOrders: stats.orders.completed,
+  }
+
   return (
-    <DashboardContentClient 
-      stats={stats}
+    <DashboardContentClient
+      stats={transformedStats}
       locale={locale}
       translations={translations}
     />
@@ -160,8 +122,14 @@ export default async function AdminDashboardPage({
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: "admin" })
 
-  // Get user's store context (tenant-scoped)
+  // Get user's store context (auth-scoped)
   const storeContext = await getAdminStoreContext()
+
+  // If onboarding not completed, redirect to onboarding
+  const onboardingStatus = storeContext?.store.onboarding_completed
+  if (storeContext && onboardingStatus !== 'completed' && onboardingStatus !== 'skipped') {
+    redirect(`/${locale}/admin/onboarding`)
+  }
 
   // If no store context, show setup prompt
   if (!storeContext) {
@@ -211,7 +179,7 @@ export default async function AdminDashboardPage({
 
         {/* Dashboard Content */}
       <Suspense fallback={<DashboardSkeleton />}>
-          <DashboardContent locale={locale} t={t} storeId={storeContext.store.id} />
+          <DashboardContent locale={locale} t={t} />
       </Suspense>
       </div>
     </div>

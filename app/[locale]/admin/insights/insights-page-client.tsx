@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, memo } from "react"
 import { motion } from "framer-motion"
 import {
   BarChart3,
@@ -17,7 +17,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { useAdminAssistant } from "@/components/admin-assistant/AdminAssistantProvider"
+import { useAdminAssistantActions } from "@/components/admin-assistant/AdminAssistantProvider"
 import { useTranslations } from "next-intl"
 
 interface Stats {
@@ -68,9 +68,9 @@ export function InsightsPageClient({
 }: InsightsPageClientProps) {
   const t = useTranslations("admin")
   const [timeRange, setTimeRange] = useState<"week" | "month" | "year">("month")
-  const { setPageContext } = useAdminAssistant()
+  const { setPageContext } = useAdminAssistantActions() // Only subscribes to stable actions
 
-  // Set page context for AI assistant
+  // Set page context for AI assistant — run once, timeRange doesn't affect context meaningfully
   useEffect(() => {
     setPageContext({
       pageName: t("insightsPage.title"),
@@ -86,22 +86,23 @@ export function InsightsPageClient({
         t("insightsPage.capabilities.aiUsage"),
       ],
     })
-  }, [timeRange, setPageContext, t])
+  }, [setPageContext, t, timeRange])
 
-  // Calculate AI usage totals
-  const aiTotals = aiUsage.reduce(
+  // Memoize AI usage totals
+  const aiTotals = useMemo(() => aiUsage.reduce(
     (acc, u) => ({
       totalOperations: acc.totalOperations + u.count,
       totalTokens: acc.totalTokens + u.tokens_used,
       totalCost: acc.totalCost + Number(u.cost_estimate),
     }),
     { totalOperations: 0, totalTokens: 0, totalCost: 0 }
-  )
-  const statusLabels: Record<string, string> = {
+  ), [aiUsage])
+
+  const statusLabels: Record<string, string> = useMemo(() => ({
     delivered: t("insightsPage.orderStatus.delivered"),
     pending: t("insightsPage.orderStatus.pending"),
     processing: t("insightsPage.orderStatus.processing"),
-  }
+  }), [t])
 
   return (
     <div className="min-h-screen bg-background">
@@ -298,7 +299,7 @@ export function InsightsPageClient({
   )
 }
 
-function MetricCard({
+const MetricCard = memo(function MetricCard({
   title,
   value,
   subtitle,
@@ -353,4 +354,4 @@ function MetricCard({
       </div>
     </motion.div>
   )
-}
+})

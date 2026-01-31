@@ -131,14 +131,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Build agent context
-    const context: AgentContext = {
+    const context = {
       merchant_id: user.id,
       store_id: effectiveStoreId,
       store_type: effectiveStoreType,
       locale,
       batch_id,
       conversation_id: activeConversationId,
-    }
+    } as AgentContext & { conversation_id?: string }
 
     // Create Manager Agent
     const manager = createManagerAgent(context)

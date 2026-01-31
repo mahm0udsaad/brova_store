@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useCallback } from "react"
 import Link from "next/link"
 import { Trash2, MoreVertical } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -28,11 +28,11 @@ interface InventoryPageClientProps {
 export default function InventoryPageClient({ initialProducts }: InventoryPageClientProps) {
   const locale = useLocale()
   const t = useTranslations("admin")
-  const buildHref = (href: string) => (href === "/" ? `/${locale}` : `/${locale}${href}`)
+  const buildHref = useCallback((href: string) => (href === "/" ? `/${locale}` : `/${locale}${href}`), [locale])
   const [products, setProducts] = useState<InventoryProductRow[]>(initialProducts)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const onboardingProducts = products.map((product) => ({
+  const onboardingProducts = useMemo(() => products.map((product) => ({
     id: product.id,
     name: product.name,
     price: product.price ?? null,
@@ -40,9 +40,9 @@ export default function InventoryPageClient({ initialProducts }: InventoryPageCl
     image_url: product.image_url,
     published: product.status === "active",
     sizes: null,
-  }))
+  })), [products])
 
-  const handleDelete = async (productId: string, productName: string) => {
+  const handleDelete = useCallback(async (productId: string, productName: string) => {
     if (!confirm(t("inventory.confirmDelete", { name: productName }))) {
       return
     }
@@ -70,11 +70,11 @@ export default function InventoryPageClient({ initialProducts }: InventoryPageCl
     } finally {
       setDeletingId(null)
     }
-  }
+  }, [t])
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     window.location.reload()
-  }
+  }, [])
 
   return (
     <div className="min-h-screen bg-background">

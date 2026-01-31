@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { ConciergeProvider, ConciergeOnboarding } from "./index"
+import { AI } from "@/app/actions"
 import type { OnboardingStatus, StoreState } from "@/lib/ai/concierge-context"
 
 /**
@@ -116,13 +117,15 @@ export function ConciergeGate({ children }: ConciergeGateProps) {
   // If we should show onboarding, wrap with provider and show the modal
   if (shouldShowOnboarding) {
     return (
-      <ConciergeProvider
-        initialStoreState={storeState}
-        initialOnboardingStatus={onboardingStatus}
-      >
-        {children}
-        <ConciergeOnboarding />
-      </ConciergeProvider>
+      <AI>
+        <ConciergeProvider
+          initialStoreState={storeState}
+          initialOnboardingStatus={onboardingStatus}
+        >
+          {children}
+          <ConciergeOnboarding />
+        </ConciergeProvider>
+      </AI>
     )
   }
   

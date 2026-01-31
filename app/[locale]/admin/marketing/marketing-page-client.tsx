@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Megaphone,
@@ -22,7 +22,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { useAdminAssistant } from "@/components/admin-assistant/AdminAssistantProvider"
+import { useAdminAssistantActions } from "@/components/admin-assistant/AdminAssistantProvider"
 import { InlineMarketingGenerator } from "@/components/admin/inline-marketing-generator"
 import { CampaignStats } from "@/components/admin/marketing/campaign-stats"
 import { CampaignCard } from "@/components/admin/marketing/campaign-card"
@@ -82,15 +82,18 @@ export function MarketingPageClient({ initialCampaigns, products }: MarketingPag
   const [showNewCampaign, setShowNewCampaign] = useState(false)
   const [activeView, setActiveView] = useState<"campaigns" | "generator">("campaigns")
   const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info" } | null>(null)
-  const { setPageContext } = useAdminAssistant()
+  const { setPageContext } = useAdminAssistantActions() // Only subscribes to stable actions
 
   // Set page context for AI assistant
+  const pageContextRef = useRef({ filterType, filterStatus, searchQuery })
+  pageContextRef.current = { filterType, filterStatus, searchQuery }
+
   useEffect(() => {
     setPageContext({
       pageName: t("marketingPage.title"),
       pageType: "marketing",
       selectedItems: [],
-      filters: { type: filterType, status: filterStatus, search: searchQuery },
+      filters: { type: pageContextRef.current.filterType, status: pageContextRef.current.filterStatus, search: pageContextRef.current.searchQuery },
       capabilities: [
         t("marketingPage.capabilities.instagram"),
         t("marketingPage.capabilities.email"),
@@ -100,13 +103,13 @@ export function MarketingPageClient({ initialCampaigns, products }: MarketingPag
         t("marketingPage.capabilities.abTests"),
       ],
     })
-  }, [filterType, filterStatus, searchQuery, setPageContext, t])
+  }, [setPageContext, t])
 
   // Toast notification handler
-  const showToast = (message: string, variant: "success" | "error" | "info") => {
+  const showToast = useCallback((message: string, variant: "success" | "error" | "info") => {
     setToast({ message, variant })
     setTimeout(() => setToast(null), 5000)
-  }
+  }, [])
 
   // Listen for AI navigation events to switch views and refresh
   useEffect(() => {
@@ -143,7 +146,7 @@ export function MarketingPageClient({ initialCampaigns, products }: MarketingPag
     }
   }, [])
 
-  const filteredCampaigns = campaigns.filter((campaign) => {
+  const filteredCampaigns = useMemo(() => campaigns.filter((campaign) => {
     const matchesSearch = !searchQuery ||
       campaign.name.toLowerCase().includes(searchQuery.toLowerCase())
 
@@ -151,14 +154,14 @@ export function MarketingPageClient({ initialCampaigns, products }: MarketingPag
     const matchesStatus = filterStatus === "all" || campaign.status === filterStatus
 
     return matchesSearch && matchesType && matchesStatus
-  })
+  }), [campaigns, searchQuery, filterType, filterStatus])
 
-  const stats = {
+  const stats = useMemo(() => ({
     total: campaigns.length,
     active: campaigns.filter((c) => c.status === "active").length,
     draft: campaigns.filter((c) => c.status === "draft").length,
     scheduled: campaigns.filter((c) => c.status === "scheduled").length,
-  }
+  }), [campaigns])
 
   return (
     <div className="min-h-screen bg-background">

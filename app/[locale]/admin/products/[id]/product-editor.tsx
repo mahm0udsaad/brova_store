@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useTranslations } from "next-intl"
 
 type AdminProduct = {
   id: string
@@ -26,6 +27,7 @@ interface ProductEditorProps {
 }
 
 export default function ProductEditor({ product, locale }: ProductEditorProps) {
+  const t = useTranslations("admin")
   const isArabic = locale === 'ar'
   const [status, setStatus] = useState<'draft' | 'active'>(product.status)
   const [price, setPrice] = useState<string>(product.price?.toString() || "")
@@ -61,13 +63,13 @@ export default function ProductEditor({ product, locale }: ProductEditorProps) {
     const parsedInventory = inventory ? Number(inventory) : 0
 
     if (price && Number.isNaN(parsedPrice)) {
-      setError(isArabic ? "السعر يجب أن يكون رقماً" : "Price must be a number")
+      setError(t("editor.priceError")) // Add key to admin.ts if missing, or use generic
       setIsSaving(false)
       return
     }
 
     if (inventory && Number.isNaN(parsedInventory)) {
-      setError(isArabic ? "المخزون يجب أن يكون رقماً" : "Inventory must be a number")
+      setError(t("editor.inventoryError")) // Add key
       setIsSaving(false)
       return
     }
@@ -85,12 +87,12 @@ export default function ProductEditor({ product, locale }: ProductEditorProps) {
 
     if (!response.ok) {
       const data = await response.json().catch(() => null)
-      setError(data?.error || (isArabic ? "فشل تحديث المنتج" : "Failed to update product"))
+      setError(data?.error || t("editor.updateError"))
       setIsSaving(false)
       return
     }
 
-    setSuccess(isArabic ? "تم تحديث المنتج" : "Product updated")
+    setSuccess(t("editor.updateSuccess"))
     setIsSaving(false)
   }
 
@@ -100,10 +102,10 @@ export default function ProductEditor({ product, locale }: ProductEditorProps) {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs text-muted-foreground">
-              {isArabic ? 'المخزون' : 'Inventory'} / {
+              {t("editor.inventory")} / {
                 isArabic
-                  ? (product.category_ar || product.category || 'غير مصنف')
-                  : (product.category || 'Uncategorized')
+                  ? (product.category_ar || product.category || t("editor.uncategorized"))
+                  : (product.category || t("editor.uncategorized"))
               }
             </p>
             <h1 className="text-2xl font-bold">
@@ -111,7 +113,7 @@ export default function ProductEditor({ product, locale }: ProductEditorProps) {
             </h1>
           </div>
           <Link href={`/${locale}/admin/inventory`} className="text-sm font-semibold text-primary">
-            {isArabic ? 'العودة للمخزون' : 'Back to Inventory'}
+            {t("inventory.backToDashboard")}
           </Link>
         </div>
 
@@ -119,9 +121,9 @@ export default function ProductEditor({ product, locale }: ProductEditorProps) {
           <div className="rounded-2xl border border-border bg-card p-6 space-y-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold">{isArabic ? 'الحالة' : 'Status'}</p>
+                <p className="text-sm font-semibold">{t("editor.status")}</p>
                 <p className="text-xs text-muted-foreground">
-                  {isArabic ? 'التبديل بين المسودة والنشط' : 'Switch between Draft and Active'}
+                  {t("editor.statusDesc")}
                 </p>
               </div>
               <button
@@ -131,45 +133,45 @@ export default function ProductEditor({ product, locale }: ProductEditorProps) {
                 }`}
               >
                 {status === 'active'
-                  ? (isArabic ? 'نشط' : 'Active')
-                  : (isArabic ? 'مسودة' : 'Draft')
+                  ? t("editor.statusPublished")
+                  : t("editor.statusDraft")
                 }
               </button>
             </div>
 
             <div>
               <label className="text-sm font-semibold">
-                {isArabic ? 'السعر (جنيه مصري)' : 'Price (EGP)'}
+                {t("editor.price")}
               </label>
               <Input
                 type="number"
                 min="0"
-                placeholder={isArabic ? 'أدخل السعر' : 'Enter price'}
+                placeholder={t("editor.pricePlaceholder")}
                 value={price}
                 onChange={(event) => setPrice(event.target.value)}
                 className="mt-2"
               />
               {pendingPricing && (
                 <p className="text-xs text-amber-500 mt-2">
-                  {isArabic ? 'السعر غير محدد' : 'Pending pricing'}
+                  {t("inventory.pendingPricing")}
                 </p>
               )}
             </div>
 
             <div>
               <label className="text-sm font-semibold">
-                {isArabic ? 'المخزون' : 'Inventory'}
+                {t("editor.inventory")}
               </label>
               <Input
                 type="number"
                 min="0"
-                placeholder={isArabic ? 'أدخل الكمية' : 'Enter quantity'}
+                placeholder={t("editor.inventoryPlaceholder")}
                 value={inventory}
                 onChange={(event) => setInventory(event.target.value)}
                 className="mt-2"
               />
               <p className="text-xs text-muted-foreground mt-2">
-                {isArabic ? 'عدد القطع المتاحة في المخزون' : 'Number of items available in stock'}
+                {t("editor.inventoryDesc")}
               </p>
             </div>
           </div>
@@ -177,16 +179,16 @@ export default function ProductEditor({ product, locale }: ProductEditorProps) {
           <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
             <div>
               <p className="text-sm font-semibold">
-                {isArabic ? 'معرض الصور' : 'Image Gallery'}
+                {t("editor.images")}
               </p>
               <p className="text-xs text-muted-foreground">
-                {isArabic ? 'أعد ترتيب الصور للتحكم في العرض الرئيسي' : 'Reorder images to control the main display'}
+                {t("editor.imagesDesc")}
               </p>
             </div>
             <div className="space-y-3">
               {images.length === 0 && (
                 <div className="text-sm text-muted-foreground">
-                  {isArabic ? 'لا توجد صور متاحة' : 'No images available'}
+                  {t("editor.noImages")}
                 </div>
               )}
               {images.map((image, index) => (
@@ -194,16 +196,16 @@ export default function ProductEditor({ product, locale }: ProductEditorProps) {
                   <img src={image} alt={`Product ${index + 1}`} className="h-14 w-14 rounded-lg object-cover" />
                   <div className="flex-1">
                     <p className="text-xs text-muted-foreground">
-                      {isArabic ? `صورة ${index + 1}` : `Image ${index + 1}`}
+                      {t("editor.imageIndex", { index: index + 1 })}
                     </p>
                     <p className="text-xs break-all">{image}</p>
                   </div>
                   <div className="flex flex-col gap-2">
                     <Button variant="outline" size="sm" onClick={() => moveImage(index, index - 1)}>
-                      {isArabic ? 'أعلى' : 'Up'}
+                      {t("editor.up")}
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => moveImage(index, index + 1)}>
-                      {isArabic ? 'أسفل' : 'Down'}
+                      {t("editor.down")}
                     </Button>
                   </div>
                 </div>
@@ -219,8 +221,8 @@ export default function ProductEditor({ product, locale }: ProductEditorProps) {
           </div>
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving
-              ? (isArabic ? 'جاري الحفظ...' : 'Saving...')
-              : (isArabic ? 'حفظ التغييرات' : 'Save Changes')
+              ? t("editor.saving")
+              : t("editor.save")
             }
           </Button>
         </div>

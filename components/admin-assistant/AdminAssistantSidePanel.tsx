@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Send, Minimize2, Sparkles, Bot, GripVertical, Paperclip, X } from "lucide-react"
+import { Send, Minimize2, Sparkles, Bot, GripVertical, Paperclip, X, MessageSquarePlus } from "lucide-react"
 import { useAdminAssistant } from "./AdminAssistantProvider"
 import { AdminAssistantMessage } from "./AdminAssistantMessage"
 import { Button } from "@/components/ui/button"
@@ -23,6 +23,7 @@ export function AdminAssistantSidePanel({ staticMode = false }: AdminAssistantSi
     isLoading,
     setDisplayMode,
     pageContext,
+    startNewChat,
   } = useAdminAssistant()
 
   const [input, setInput] = useState("")
@@ -94,6 +95,10 @@ export function AdminAssistantSidePanel({ staticMode = false }: AdminAssistantSi
       
       if (file.size > 5 * 1024 * 1024) { // 5MB limit per file
         alert(t("assistantPanel.alertFileTooLarge", { name: file.name }))
+        filesProcessed++
+        if (filesProcessed === filesToProcess && newImages.length > 0) {
+          setSelectedImages(prev => [...prev, ...newImages])
+        }
         continue
       }
 
@@ -103,6 +108,12 @@ export function AdminAssistantSidePanel({ staticMode = false }: AdminAssistantSi
         filesProcessed++
         
         if (filesProcessed === filesToProcess) {
+          setSelectedImages(prev => [...prev, ...newImages])
+        }
+      }
+      reader.onerror = () => {
+        filesProcessed++
+        if (filesProcessed === filesToProcess && newImages.length > 0) {
           setSelectedImages(prev => [...prev, ...newImages])
         }
       }
@@ -175,14 +186,26 @@ export function AdminAssistantSidePanel({ staticMode = false }: AdminAssistantSi
             )}
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className="text-white hover:bg-white/20 rounded-lg"
-          onClick={() => setDisplayMode(staticMode ? "collapsed" : "panel")}
-        >
-          {staticMode ? <X className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="text-white hover:bg-white/20 rounded-lg"
+            onClick={startNewChat}
+            title="Start new chat"
+          >
+            <MessageSquarePlus className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="text-white hover:bg-white/20 rounded-lg"
+            onClick={() => setDisplayMode(staticMode ? "collapsed" : "panel")}
+            title={staticMode ? "Close" : "Minimize"}
+          >
+            {staticMode ? <X className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}
+          </Button>
+        </div>
       </div>
 
       {/* Capabilities Info */}

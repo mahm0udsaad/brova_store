@@ -27,7 +27,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Slider } from "@/components/ui/slider"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
-import { useAdminAssistant } from "@/components/admin-assistant/AdminAssistantProvider"
+import { useAdminAssistantActions } from "@/components/admin-assistant/AdminAssistantProvider"
 import { ImageDetailModal } from "@/components/admin/ImageDetailModal"
 import { BatchDetailModal } from "@/components/admin/BatchDetailModal"
 import { bulkDeals as arBulkDeals } from "@/lib/i18n/ar/bulk-deals"
@@ -118,7 +118,7 @@ export function BulkDealsPageClient({ initialBatches }: BulkDealsPageClientProps
     variant: "success" | "error" | "info"
   } | null>(null)
   const [errors, setErrors] = useState<string[]>([])
-  const { setPageContext } = useAdminAssistant()
+  const { setPageContext } = useAdminAssistantActions() // Only subscribes to stable actions
 
   // Set page context for AI assistant
   useEffect(() => {

@@ -24,6 +24,12 @@ import {
   ExternalLink,
   Sparkles,
   Globe,
+  Wallet,
+  Users,
+  Bell,
+  Truck,
+  Rocket,
+  CreditCard,
   type LucideIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -74,6 +80,7 @@ export function AdminSidebar({ storeName }: { storeName?: string }) {
       items: [
         { id: "dashboard", label: t("dashboardLabel"), href: "/admin", icon: LayoutDashboard, group: "main" },
         { id: "orders", label: t("orders"), href: "/admin/orders", icon: ShoppingCart, group: "main" },
+        { id: "customers", label: t("customers"), href: "/admin/customers", icon: Users, group: "main" },
       ],
     },
     {
@@ -92,6 +99,7 @@ export function AdminSidebar({ storeName }: { storeName?: string }) {
       label: t("navGroups.analytics"),
       items: [
         { id: "insights", label: t("insights"), href: "/admin/insights", icon: BarChart3, group: "settings" },
+        { id: "wallet", label: t("wallet"), href: "/admin/wallet", icon: Wallet, group: "settings" },
       ],
     },
     {
@@ -99,8 +107,12 @@ export function AdminSidebar({ storeName }: { storeName?: string }) {
       label: t("navGroups.settings"),
       items: [
         { id: "appearance", label: t("appearance"), href: "/admin/appearance", icon: Palette, group: "settings" },
+        { id: "shipping", label: t("shipping"), href: "/admin/settings/shipping", icon: Truck, group: "settings" },
+        { id: "publishing", label: t("publishing"), href: "/admin/settings/publish", icon: Rocket, group: "settings" },
         { id: "domains", label: t("domains"), href: "/admin/domains", icon: Globe, group: "settings" },
+        { id: "billing", label: "Billing", href: "/admin/settings/billing", icon: CreditCard, group: "settings" },
         { id: "settings", label: t("settings"), href: "/admin/settings", icon: Settings, group: "settings" },
+        { id: "notifications", label: t("notifications"), href: "/admin/notifications", icon: Bell, group: "settings" },
       ],
     },
   ], [t, isRtl])

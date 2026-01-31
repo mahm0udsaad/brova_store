@@ -3,6 +3,7 @@ export const auth = {
   signup: {
     title: 'إنشاء حساب جديد',
     subtitle: 'ابدأ ببناء متجرك في ثوانٍ',
+    googleSignup: 'المتابعة باستخدام Google',
     email: 'البريد الإلكتروني',
     emailPlaceholder: 'you@example.com',
     password: 'كلمة المرور',
@@ -13,7 +14,7 @@ export const auth = {
     signingUp: 'جارٍ إنشاء الحساب...',
     haveAccount: 'لديك حساب بالفعل؟',
     loginLink: 'تسجيل الدخول',
-    
+
     // Errors
     errors: {
       emailRequired: 'الرجاء إدخال بريدك الإلكتروني',
@@ -23,6 +24,7 @@ export const auth = {
       passwordMismatch: 'كلمات المرور غير متطابقة',
       emailExists: 'يوجد حساب بالفعل بهذا البريد الإلكتروني',
       weakPassword: 'الرجاء اختيار كلمة مرور أقوى',
+      emailNotConfirmed: 'يرجى تأكيد عنوان بريدك الإلكتروني أولاً',
       generic: 'حدث خطأ ما. الرجاء المحاولة مرة أخرى',
     },
   },
@@ -31,6 +33,7 @@ export const auth = {
   login: {
     title: 'مرحبًا بعودتك',
     subtitle: 'سجّل دخولك للوصول إلى متجرك',
+    googleSignin: 'المتابعة باستخدام Google',
     email: 'البريد الإلكتروني',
     emailPlaceholder: 'you@example.com',
     password: 'كلمة المرور',
@@ -40,7 +43,7 @@ export const auth = {
     noAccount: 'ليس لديك حساب؟',
     signupLink: 'إنشاء حساب',
     forgotPassword: 'نسيت كلمة المرور؟',
-    
+
     // Errors
     errors: {
       emailRequired: 'الرجاء إدخال بريدك الإلكتروني',
@@ -48,10 +51,12 @@ export const auth = {
       passwordRequired: 'الرجاء إدخال كلمة المرور',
       invalidCredentials: 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
       tooManyAttempts: 'محاولات كثيرة جدًا. الرجاء المحاولة بعد بضع دقائق',
+      emailNotConfirmed: 'يرجى تأكيد عنوان بريدك الإلكتروني أولاً',
       generic: 'حدث خطأ ما. الرجاء المحاولة مرة أخرى',
     },
   },
 
   // Common
+  orEmail: 'أو استخدم البريد الإلكتروني',
   or: 'أو',
 }

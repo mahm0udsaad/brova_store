@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { motion } from "framer-motion"
 import {
   Bot,
@@ -23,7 +23,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
-import { useAdminAssistant } from "@/components/admin-assistant/AdminAssistantProvider"
+import { useAdminAssistantActions } from "@/components/admin-assistant/AdminAssistantProvider"
 import { useTranslations } from "next-intl"
 import { updateStoreContact } from "@/lib/actions/store-contact"
 
@@ -109,7 +109,7 @@ export function SettingsPageClient({ initialSettings, initialContact, aiUsage }:
   )
   const [isSaving, setIsSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
-  const { setPageContext } = useAdminAssistant()
+  const { setPageContext } = useAdminAssistantActions() // Only subscribes to stable actions
 
   // Set page context for AI assistant
   useEffect(() => {
@@ -127,8 +127,8 @@ export function SettingsPageClient({ initialSettings, initialContact, aiUsage }:
     })
   }, [setPageContext, t])
 
-  // Calculate usage statistics
-  const usageStats = aiUsage.reduce(
+  // Memoize usage statistics
+  const usageStats = useMemo(() => aiUsage.reduce(
     (acc, u) => {
       if (u.operation.includes("image")) {
         acc.images += u.count
@@ -138,11 +138,11 @@ export function SettingsPageClient({ initialSettings, initialContact, aiUsage }:
       return acc
     },
     { images: 0, tokens: 0 }
-  )
+  ), [aiUsage])
 
-  const limits = settings.ai_preferences?.daily_limits || defaultSettings.ai_preferences!.daily_limits
+  const limits = useMemo(() => settings.ai_preferences?.daily_limits || defaultSettings.ai_preferences!.daily_limits, [settings.ai_preferences?.daily_limits])
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     setIsSaving(true)
 
     try {
@@ -177,17 +177,17 @@ export function SettingsPageClient({ initialSettings, initialContact, aiUsage }:
     } finally {
       setIsSaving(false)
     }
-  }
+  }, [contact, settings])
 
-  const updateContactInfo = (key: keyof StoreContact, value: string) => {
+  const updateContactInfo = useCallback((key: keyof StoreContact, value: string) => {
     setContact((prev) => ({
       ...prev,
       [key]: value,
     }))
     setHasChanges(true)
-  }
+  }, [])
 
-  const updatePreference = (key: string, value: any) => {
+  const updatePreference = useCallback((key: string, value: any) => {
     setSettings((prev) => ({
       ...prev,
       ai_preferences: {
@@ -196,9 +196,9 @@ export function SettingsPageClient({ initialSettings, initialContact, aiUsage }:
       },
     }))
     setHasChanges(true)
-  }
+  }, [])
 
-  const updateLimit = (key: string, value: number) => {
+  const updateLimit = useCallback((key: string, value: number) => {
     setSettings((prev) => ({
       ...prev,
       ai_preferences: {
@@ -210,9 +210,9 @@ export function SettingsPageClient({ initialSettings, initialContact, aiUsage }:
       },
     }))
     setHasChanges(true)
-  }
+  }, [])
 
-  const updateNotification = (key: string, value: boolean) => {
+  const updateNotification = useCallback((key: string, value: boolean) => {
     setSettings((prev) => ({
       ...prev,
       notifications: {
@@ -221,7 +221,7 @@ export function SettingsPageClient({ initialSettings, initialContact, aiUsage }:
       },
     }))
     setHasChanges(true)
-  }
+  }, [])
 
   return (
     <div className="min-h-screen bg-background">

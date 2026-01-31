@@ -183,12 +183,19 @@ export class ProductAgent extends BaseAgent {
 
         const storeId = storeData.id
 
+        const slug = (params.name || "product")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/(^-|-$)/g, "")
+          .concat(`-${Date.now().toString(36)}`)
+
         // Insert into store_products table
         const { data, error } = await (supabase as any)
           .from("store_products")
           .insert({
             store_id: storeId,
             name: params.name,
+            slug,
             description: params.description,
             price: params.price || 0,
             category: params.categoryId,
@@ -213,6 +220,11 @@ export class ProductAgent extends BaseAgent {
       }
 
       const storeId = orgData.store_id
+      const slug = (params.name || "product")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "")
+        .concat(`-${Date.now().toString(36)}`)
 
       // Insert into store_products table
       const { data, error } = await (supabase as any)
@@ -220,6 +232,7 @@ export class ProductAgent extends BaseAgent {
         .insert({
           store_id: storeId,
           name: params.name,
+          slug,
           description: params.description,
           price: params.price || 0,
           category: params.categoryId,
@@ -551,6 +564,7 @@ Just output the description text, nothing else.`
   private async bulkUpdateStockQuantity(params: {
     quantity: number
     productIds?: string[]
+    filterByQuantity?: number
   }): Promise<AgentResult> {
     try {
       const supabase = createAdminClient()
@@ -562,6 +576,10 @@ Just output the description text, nothing else.`
 
       if (params.productIds && params.productIds.length > 0) {
         query = query.in("id", params.productIds)
+      }
+
+      if (params.filterByQuantity !== undefined) {
+        query = query.eq("stock_quantity", params.filterByQuantity)
       }
 
       const { data: products, error: fetchError } = await query

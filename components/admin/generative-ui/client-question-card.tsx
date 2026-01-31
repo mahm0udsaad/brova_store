@@ -1,6 +1,6 @@
 'use client';
 
-import { useActions } from 'ai/rsc';
+import { useActions } from '@ai-sdk/rsc';
 import { QuestionCard } from './question-card';
 import type { AgentContext } from '@/lib/agents/v2/schemas';
 

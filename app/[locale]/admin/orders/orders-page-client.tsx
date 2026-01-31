@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, useCallback, useRef, memo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Package,
@@ -75,7 +75,9 @@ export default function OrdersPageClient({ initialOrders }: OrdersPageClientProp
   const [isUpdating, setIsUpdating] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
   const [userActivity, setUserActivity] = useState<any[]>([])
-  const statusConfig: Record<string, StatusConfig> = {
+
+  // Memoize statusConfig to avoid recreating on every render
+  const statusConfig: Record<string, StatusConfig> = useMemo(() => ({
     pending: { label: t("ordersPage.status.pending"), icon: Clock, color: "text-yellow-500 bg-yellow-500/10", badge: "bg-yellow-500" },
     confirmed: { label: t("ordersPage.status.confirmed"), icon: CheckCircle2, color: "text-blue-500 bg-blue-500/10", badge: "bg-blue-500" },
     processing: { label: t("ordersPage.status.processing"), icon: Package, color: "text-purple-500 bg-purple-500/10", badge: "bg-purple-500" },
@@ -83,15 +85,19 @@ export default function OrdersPageClient({ initialOrders }: OrdersPageClientProp
     out_for_delivery: { label: t("ordersPage.status.outForDelivery"), icon: Truck, color: "text-orange-500 bg-orange-500/10", badge: "bg-orange-500" },
     delivered: { label: t("ordersPage.status.delivered"), icon: PackageCheck, color: "text-green-500 bg-green-500/10", badge: "bg-green-500" },
     cancelled: { label: t("ordersPage.status.cancelled"), icon: XCircle, color: "text-red-500 bg-red-500/10", badge: "bg-red-500" },
-  }
+  }), [t])
 
-  const buildHref = (href: string) => (href === "/" ? `/${locale}` : `/${locale}${href}`)
+  const buildHref = useCallback((href: string) => (href === "/" ? `/${locale}` : `/${locale}${href}`), [locale])
   const BackIcon = isRtl ? ArrowRight : ArrowLeft
 
-  // Subscribe to real-time order updates
+  // Use ref for selectedOrder in realtime callback to avoid re-subscribing
+  const selectedOrderRef = useRef(selectedOrder)
+  selectedOrderRef.current = selectedOrder
+
+  // Subscribe to real-time order updates — stable dependency (runs once)
   useEffect(() => {
     const supabase = createClient()
-    
+
     const channel = supabase
       .channel("orders-changes")
       .on(
@@ -108,7 +114,7 @@ export default function OrdersPageClient({ initialOrders }: OrdersPageClientProp
             setOrders((prev) =>
               prev.map((order) => (order.id === payload.new.id ? (payload.new as Order) : order))
             )
-            if (selectedOrder?.id === payload.new.id) {
+            if (selectedOrderRef.current?.id === payload.new.id) {
               setSelectedOrder(payload.new as Order)
             }
           } else if (payload.eventType === "DELETE") {
@@ -121,28 +127,39 @@ export default function OrdersPageClient({ initialOrders }: OrdersPageClientProp
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [selectedOrder])
+  }, [])
 
-  // Filter orders
-  const filteredOrders = orders.filter((order) => {
+  // Memoize filtered orders
+  const filteredOrders = useMemo(() => orders.filter((order) => {
     const matchesSearch =
       (order.order_number?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
       (order.customer_name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
       (order.customer_phone || '').includes(searchQuery)
-    
+
     const matchesFilter = filterStatus === "all" || order.status === filterStatus
-    
+
     return matchesSearch && matchesFilter
-  })
+  }), [orders, searchQuery, filterStatus])
+
+  // Memoize filter counts to avoid recomputing in each FilterButton
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = { all: orders.length }
+    for (const order of orders) {
+      counts[order.status] = (counts[order.status] || 0) + 1
+    }
+    return counts
+  }, [orders])
 
   // Load user activity when order is selected
+  const selectedOrderId = selectedOrder?.id
+  const selectedUserId = selectedOrder?.user_id
   useEffect(() => {
-    if (selectedOrder?.user_id) {
-      loadUserActivity(selectedOrder.user_id, selectedOrder.id)
+    if (selectedUserId && selectedOrderId) {
+      loadUserActivity(selectedUserId, selectedOrderId)
     }
-  }, [selectedOrder])
+  }, [selectedUserId, selectedOrderId])
 
-  const loadUserActivity = async (userId: string, orderId: string) => {
+  const loadUserActivity = useCallback(async (userId: string, orderId: string) => {
     const supabase = createClient()
     const { data } = await supabase
       .from("user_activity_log")
@@ -154,7 +171,7 @@ export default function OrdersPageClient({ initialOrders }: OrdersPageClientProp
     if (data) {
       setUserActivity(data)
     }
-  }
+  }, [])
 
   const updateOrderStatus = async (orderId: string, newStatus: string, comment?: string) => {
     setIsUpdating(true)
@@ -377,7 +394,7 @@ export default function OrdersPageClient({ initialOrders }: OrdersPageClientProp
                     label={t("ordersPage.filters.all")}
                     active={filterStatus === "all"}
                     onClick={() => setFilterStatus("all")}
-                    count={orders.length}
+                    count={statusCounts.all}
                   />
                   {Object.entries(statusConfig).map(([status, config]) => (
                     <FilterButton
@@ -385,7 +402,7 @@ export default function OrdersPageClient({ initialOrders }: OrdersPageClientProp
                       label={config.label}
                       active={filterStatus === status}
                       onClick={() => setFilterStatus(status)}
-                      count={orders.filter((o) => o.status === status).length}
+                      count={statusCounts[status] || 0}
                     />
                   ))}
                 </div>
@@ -451,7 +468,7 @@ function FilterButton({ label, active, onClick, count }: any) {
   )
 }
 
-function OrderCard({ order, index, onClick, statusConfig, t, locale }: any) {
+const OrderCard = memo(function OrderCard({ order, index, onClick, statusConfig, t, locale }: any) {
   const config = statusConfig[order.status as keyof typeof statusConfig] || statusConfig.pending
   const Icon = config.icon
 
@@ -500,7 +517,7 @@ function OrderCard({ order, index, onClick, statusConfig, t, locale }: any) {
       </div>
     </motion.div>
   )
-}
+})
 
 function OrderDetailsView({ order, onBack, onStatusUpdate, onWhatsApp, onCall, onEmail, onSMS, isUpdating, userActivity, statusConfig, t, locale, backIcon }: any) {
   const [newStatus, setNewStatus] = useState(order.status)

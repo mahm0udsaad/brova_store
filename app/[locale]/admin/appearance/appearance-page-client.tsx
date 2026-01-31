@@ -18,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
-import { useAdminAssistant } from "@/components/admin-assistant/AdminAssistantProvider"
+import { useAdminAssistantActions } from "@/components/admin-assistant/AdminAssistantProvider"
 import { useTranslations } from "next-intl"
 import { updateStoreTheme } from "@/lib/actions/theme"
 import { useImageUpload } from "@/hooks/use-image-upload"
@@ -89,7 +89,7 @@ export function AppearancePageClient({
   const [isThemePending, startThemeTransition] = useTransition()
   const [isSaving, setIsSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
-  const { setPageContext } = useAdminAssistant()
+  const { setPageContext } = useAdminAssistantActions() // Only subscribes to stable actions
   const { uploadFiles, uploading } = useImageUpload({
     storeId,
     productId: "branding",

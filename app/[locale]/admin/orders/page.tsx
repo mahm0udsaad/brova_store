@@ -1,10 +1,16 @@
 import { createClient } from "@/lib/supabase/server"
 import { getAdminStoreContext } from "@/lib/supabase/queries/admin-store"
 import OrdersPageClient from "./orders-page-client"
+import { getTranslations } from "next-intl/server"
 
-export const metadata = {
-  title: "Order Management | Admin",
-  description: "Manage customer orders and send updates",
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: "admin.ordersPage" })
+
+  return {
+    title: t("title"),
+    description: "Manage customer orders and send updates",
+  }
 }
 
 export default async function AdminOrdersPage() {

@@ -57,7 +57,10 @@ export function useAICommands(options?: UseAICommandsOptions) {
         // Execute the command based on type
         switch (command.type) {
           case "navigate":
-            router.push(command.path)
+            // Defer navigation to avoid updating Router during render
+            setTimeout(() => {
+              router.push(command.path)
+            }, 0)
             result = { navigated: true, path: command.path }
             break
 
@@ -198,7 +201,7 @@ export function useAICommands(options?: UseAICommandsOptions) {
           table: "ai_commands",
           filter: `status=eq.pending`,
         },
-        (payload) => {
+        (payload: any) => {
           const commandRecord = payload.new as AICommandRecord
           executeCommand(commandRecord)
         }

@@ -1,13 +1,25 @@
 import { createClient } from "@/lib/supabase/server"
 import { SettingsPageClient } from "./settings-page-client"
 import { redirect } from "next/navigation"
+import { getTranslations } from "next-intl/server"
 
-export const metadata = {
-  title: "Settings",
-  description: "Configure your store settings",
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: "admin.settingsPage" })
+
+  return {
+    title: t("title"),
+    description: t("subtitle"),
+  }
 }
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>
+}) {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: "admin" })
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -24,7 +36,7 @@ export default async function SettingsPage() {
 
   if (!org) {
     // Handle case where org is missing?
-    return <div>Organization not found</div>
+    return <div>{t("storeMissing.title")}</div>
   }
 
   const { data: store } = await supabase
@@ -34,7 +46,7 @@ export default async function SettingsPage() {
     .single()
     
   if (!store) {
-     return <div>Store not found</div>
+     return <div>{t("storeMissing.title")}</div>
   }
 
   // Fetch store settings (using RLS or store_id)

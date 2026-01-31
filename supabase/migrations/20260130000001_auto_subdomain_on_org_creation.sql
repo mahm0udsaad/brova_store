@@ -77,7 +77,7 @@ BEGIN
 
   -- Create organization
   INSERT INTO organizations (owner_id, slug, name, type)
-  VALUES (v_user_id, v_org_slug, NULL, NULL)
+  VALUES (v_user_id, v_org_slug, v_org_slug, 'standard')
   RETURNING id INTO v_org_id;
 
   -- Create store
@@ -93,7 +93,7 @@ BEGIN
   VALUES (
     v_org_id,
     v_store_slug,
-    NULL,
+    v_store_slug,
     v_store_type,
     'draft',
     NULL,

@@ -40,7 +40,12 @@ export function AdminAssistantFab() {
 
       {/* Main FAB Button */}
       <motion.button
-        onClick={toggle}
+        type="button"
+        onClick={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+          toggle()
+        }}
         className={cn(
           "relative flex items-center justify-center rounded-2xl shadow-lg transition-all duration-200",
           "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",

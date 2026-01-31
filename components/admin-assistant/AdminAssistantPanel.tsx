@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Send, Maximize2, Sparkles, Bot, Paperclip, X, Image as ImageIcon } from "lucide-react"
+import { Send, Maximize2, Sparkles, Bot, Paperclip, X, Image as ImageIcon, MessageSquarePlus } from "lucide-react"
 import { useAdminAssistant } from "./AdminAssistantProvider"
 import { AdminAssistantMessage } from "./AdminAssistantMessage"
 import { Button } from "@/components/ui/button"
@@ -16,6 +16,7 @@ export function AdminAssistantPanel() {
     close,
     setDisplayMode,
     pageContext,
+    startNewChat,
   } = useAdminAssistant()
 
   const [input, setInput] = useState("")
@@ -50,18 +51,44 @@ export function AdminAssistantPanel() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
+    const maxImages = 10
+    const remainingSlots = Math.max(0, maxImages - attachedImages.length)
 
-    // Convert files to base64
-    Array.from(files).forEach((file) => {
-      if (file.type.startsWith("image/")) {
+    if (remainingSlots === 0) {
+      alert("You can attach up to 10 images.")
+      return
+    }
+
+    const filesToProcess = Array.from(files).slice(0, remainingSlots)
+    const readAsDataURL = (file: File) =>
+      new Promise<string>((resolve, reject) => {
         const reader = new FileReader()
-        reader.onload = (e) => {
-          const base64 = e.target?.result as string
-          setAttachedImages((prev) => [...prev, base64])
-        }
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = () => reject(reader.error)
         reader.readAsDataURL(file)
+      })
+
+    const processFiles = async () => {
+      const results: string[] = []
+      for (const file of filesToProcess) {
+        if (!file.type.startsWith("image/")) continue
+        if (file.size > 5 * 1024 * 1024) {
+          alert(`"${file.name}" is larger than 5MB and was skipped.`)
+          continue
+        }
+        try {
+          const base64 = await readAsDataURL(file)
+          results.push(base64)
+        } catch (error) {
+          console.error("Failed to read image file:", file.name, error)
+        }
       }
-    })
+      if (results.length > 0) {
+        setAttachedImages((prev) => [...prev, ...results])
+      }
+    }
+
+    void processFiles()
 
     // Reset file input
     if (fileInputRef.current) {
@@ -108,7 +135,17 @@ export function AdminAssistantPanel() {
             variant="ghost"
             size="icon-sm"
             className="text-white hover:bg-white/20 rounded-lg"
+            onClick={startNewChat}
+            title="Start new chat"
+          >
+            <MessageSquarePlus className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="text-white hover:bg-white/20 rounded-lg"
             onClick={() => setDisplayMode("side-panel")}
+            title="Expand to side panel"
           >
             <Maximize2 className="h-4 w-4" />
           </Button>

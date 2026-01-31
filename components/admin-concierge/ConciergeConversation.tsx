@@ -14,8 +14,9 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { springConfigs } from "@/lib/ui/motion-presets"
 import { ImageUploadZone } from "./ImageUploadZone"
-import { useUIState, useActions } from 'ai/rsc';
+import { useUIState, useActions } from '@ai-sdk/rsc';
 import type { AI } from '@/app/actions';
+import { useConcierge } from "./ConciergeProvider";
 
 // =============================================================================
 // TYPES
@@ -34,6 +35,7 @@ export function ConciergeConversation({ onRequestReview, context }: ConciergeCon
   const locale = useLocale()
   const t = useTranslations("concierge")
   const isRtl = locale === "ar"
+  const { currentStep } = useConcierge()
 
   // Use the AI SDK hooks for messages and actions
   const [aiMessages, setAiMessages] = useUIState<typeof AI>();
@@ -63,7 +65,7 @@ export function ConciergeConversation({ onRequestReview, context }: ConciergeCon
         is_initial_greeting: true,
       })
     }
-  }, [currentStep]) // Only run when entering conversation phase
+  }, [aiMessages.length, currentStep, context, submitUserMessage]) // Only run when entering conversation phase
 
   // Handle submit
   const handleSubmit = async (e?: React.FormEvent) => {

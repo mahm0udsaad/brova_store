@@ -3,6 +3,7 @@ export const landing = {
     headline: "Build & sell online with AI",
     subtext: "Launch your professional store in minutes. No coding required.",
     cta: "Create your store",
+    signin: "Sign In",
   },
   industry: {
     title: "One Platform, Any Industry",

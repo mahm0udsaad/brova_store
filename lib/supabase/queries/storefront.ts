@@ -9,6 +9,7 @@
 
 import { cache } from "react"
 import { createClient } from "@/lib/supabase/server"
+import { validatePreviewToken } from "@/lib/actions/store-lifecycle"
 
 /**
  * Storefront Product (from store_products table)
@@ -89,7 +90,16 @@ export interface StorefrontCategory {
  * @param orgSlug - Organization slug (e.g., 'brova')
  * @returns Storefront context or null if not found
  */
-export const getStorefrontContext = cache(async (orgSlug: string): Promise<StorefrontContext | null> => {
+/**
+ * Get storefront context by organization slug.
+ *
+ * Options:
+ *  - previewToken: If provided, bypasses the active-store check for draft stores.
+ */
+export const getStorefrontContext = cache(async (
+  orgSlug: string,
+  options?: { previewToken?: string }
+): Promise<StorefrontContext | null> => {
   const supabase = await createClient()
 
   // Get organization
@@ -114,6 +124,19 @@ export const getStorefrontContext = cache(async (orgSlug: string): Promise<Store
   if (storeError || !store) {
     console.error('[getStorefrontContext] Store not found for org:', orgSlug, storeError)
     return null
+  }
+
+  // Enforce active status for public access
+  if (store.status !== 'active') {
+    // Allow preview token bypass for draft stores
+    if (options?.previewToken) {
+      const preview = await validatePreviewToken(options.previewToken)
+      if (!preview.valid || preview.storeId !== store.id) {
+        return null
+      }
+    } else {
+      return null
+    }
   }
 
   // Get store contact

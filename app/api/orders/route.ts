@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { resolveTenant } from "@/lib/tenant-resolver"
+import { getStorefrontContext } from "@/lib/supabase/queries/storefront"
 
 type OrderPayload = {
   items: unknown[]
@@ -9,15 +11,6 @@ type OrderPayload = {
   subtotal: number
   shippingFee: number
   total: number
-}
-
-type UserOrganization = {
-  organization_id: string
-  organization_slug: string
-  store_id: string
-  store_slug: string
-  store_type: string
-  store_status: string
 }
 
 export async function POST(request: NextRequest) {
@@ -37,15 +30,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Order items are required" }, { status: 400 })
     }
 
-    // Get user's organization and store for tenant isolation
-    const { data: orgData, error: orgError } = await supabase
-      .rpc('get_user_organization')
-      .single<UserOrganization>()
+    // Resolve store from tenant context (subdomain/domain), not from buyer's org
+    const tenantSlug = await resolveTenant()
+    const context = await getStorefrontContext(tenantSlug)
 
-    if (orgError || !orgData?.store_id) {
-      console.error('[POST /api/orders] Failed to get user organization:', orgError)
+    if (!context || context.store.status !== 'active') {
       return NextResponse.json({
-        error: "Store not found. Please complete onboarding first."
+        error: "Store not found or not active."
       }, { status: 400 })
     }
 
@@ -53,7 +44,7 @@ export async function POST(request: NextRequest) {
       .from("orders")
       .insert({
         user_id: user.id,
-        store_id: orgData.store_id, // Tenant isolation
+        store_id: context.store.id,
         items: body.items,
         address: body.address,
         phone: body.phone,

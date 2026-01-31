@@ -4,8 +4,7 @@ import { AdminAssistantProvider } from "@/components/admin-assistant/AdminAssist
 import { AdminShell } from "@/components/admin/AdminShell"
 import { ConciergeGate } from "@/components/admin-concierge/ConciergeGate"
 import { getTranslations } from "next-intl/server"
-import { resolveTenant } from "@/lib/tenant-resolver"
-import { getStorefrontContext } from "@/lib/supabase/queries/storefront"
+import { getAdminStoreContext } from "@/lib/supabase/queries/admin-store"
 
 export async function generateMetadata({
   params,
@@ -14,11 +13,10 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params
   const t = await getTranslations({ locale, namespace: "admin" })
-  
-  const tenantSlug = await resolveTenant()
-  const context = await getStorefrontContext(tenantSlug)
+
+  const context = await getAdminStoreContext()
   const storeName = context?.store.name || "Store"
-  
+
   return {
     title: {
       default: `Admin Panel | ${storeName}`,
@@ -29,8 +27,7 @@ export async function generateMetadata({
 }
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const tenantSlug = await resolveTenant()
-  const context = await getStorefrontContext(tenantSlug)
+  const context = await getAdminStoreContext()
   const storeName = context?.store.name
   const storeStatus = context?.store.status || "draft"
   const storeSlug = context?.store.slug || ""

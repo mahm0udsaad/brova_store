@@ -2,7 +2,7 @@ import { createClient as createBrowserClient } from "@/lib/supabase/client"
 
 /**
  * Client-side admin check
- * Checks if the current user is an admin by querying the profiles table
+ * A user is an admin if they own an organization OR have is_admin flag in profiles.
  */
 export async function isAdminClient(): Promise<boolean> {
   try {
@@ -11,28 +11,30 @@ export async function isAdminClient(): Promise<boolean> {
       data: { user },
     } = await supabase.auth.getUser()
 
-    console.log("[isAdminClient] Checking admin status for user:", user?.id)
-
     if (!user) {
-      console.log("[isAdminClient] No user found")
       return false
     }
 
-    const { data, error } = await supabase
+    // Check if user owns an organization (multi-tenant admin)
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("id")
+      .eq("owner_id", user.id)
+      .limit(1)
+      .maybeSingle()
+
+    if (org) {
+      return true
+    }
+
+    // Fallback: check legacy is_admin flag on profiles
+    const { data: profile } = await supabase
       .from("profiles")
       .select("is_admin")
       .eq("id", user.id)
       .single()
 
-    if (error) {
-      console.error("[isAdminClient] Error querying profile:", error)
-      return false
-    }
-
-    console.log("[isAdminClient] Profile data:", data)
-    console.log("[isAdminClient] Is admin?", data?.is_admin === true)
-
-    return data?.is_admin === true
+    return profile?.is_admin === true
   } catch (error) {
     console.error("[isAdminClient] Exception:", error)
     return false

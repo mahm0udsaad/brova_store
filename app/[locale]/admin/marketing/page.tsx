@@ -1,9 +1,15 @@
 import { createAdminClient } from "@/lib/supabase/admin"
 import { MarketingPageClient } from "./marketing-page-client"
+import { getTranslations } from "next-intl/server"
 
-export const metadata = {
-  title: "Marketing",
-  description: "Manage marketing campaigns and generated content",
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: "admin.marketingPage" })
+
+  return {
+    title: t("title"),
+    description: t("subtitle"),
+  }
 }
 
 export default async function MarketingPage() {

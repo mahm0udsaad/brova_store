@@ -1,9 +1,15 @@
 import { createAdminClient } from "@/lib/supabase/admin"
 import { InsightsPageClient } from "./insights-page-client"
+import { getTranslations } from "next-intl/server"
 
-export const metadata = {
-  title: "Insights",
-  description: "View store analytics and performance metrics",
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params
+  const t = await getTranslations({ locale, namespace: "admin.insightsPage" })
+
+  return {
+    title: t("title"),
+    description: t("subtitle"),
+  }
 }
 
 export default async function InsightsPage() {
