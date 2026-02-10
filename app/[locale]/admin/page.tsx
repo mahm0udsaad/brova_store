@@ -155,7 +155,7 @@ export default async function AdminDashboardPage({
     )
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
         {/* Welcome Section */}
         <BilingualWelcomeSection
@@ -165,12 +165,14 @@ export default async function AdminDashboardPage({
 
         {/* Store Status Banner */}
         {storeContext.store.status === "draft" && (
-          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 backdrop-blur-sm p-4">
             <div className="flex items-center gap-3">
-              <svg className="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+              <div className="p-2 rounded-full bg-amber-500/10">
+                <svg className="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p className="text-sm font-medium text-amber-500">
                 {t("storeStatus.draft")}
               </p>
             </div>

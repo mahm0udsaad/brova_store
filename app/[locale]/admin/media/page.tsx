@@ -24,8 +24,8 @@ export default async function MediaPage() {
 
   return (
     <MediaPageClient
-      initialAssets={assets || []}
-      products={products || []}
+      initialAssets={(assets || []) as any}
+      products={(products || []) as any}
     />
   )
 }

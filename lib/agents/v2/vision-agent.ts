@@ -14,7 +14,7 @@ import { analyzeImages } from "./tools"
 export function createVisionAgent() {
   return new ToolLoopAgent({
     model: models.flash,
-    system: `You are a Vision Analysis Agent for an e-commerce platform.
+    instructions: `You are a Vision Analysis Agent for an e-commerce platform.
 
 Your job is to analyze product images and group them intelligently.
 

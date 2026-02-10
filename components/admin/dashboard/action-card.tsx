@@ -39,28 +39,28 @@ export function ActionCard({
   // Variant styles
   const variantStyles = {
     default: {
-      bg: "bg-card hover:bg-accent/50",
-      border: "border-border",
-      iconBg: "bg-muted",
-      iconColor: "text-foreground",
+      bg: "bg-white/5 hover:bg-white/10 backdrop-blur-md",
+      border: "border-white/10 hover:border-white/20",
+      iconBg: "bg-white/5",
+      iconColor: "text-muted-foreground",
     },
     primary: {
-      bg: "bg-primary/5 hover:bg-primary/10",
-      border: "border-primary/20",
+      bg: "bg-primary/5 hover:bg-primary/10 backdrop-blur-md",
+      border: "border-primary/20 hover:border-primary/30",
       iconBg: "bg-primary/10",
       iconColor: "text-primary",
     },
     success: {
-      bg: "bg-success-bg hover:bg-success/10",
-      border: "border-success-border",
-      iconBg: "bg-success/10",
-      iconColor: "text-success",
+      bg: "bg-emerald-500/5 hover:bg-emerald-500/10 backdrop-blur-md",
+      border: "border-emerald-500/20 hover:border-emerald-500/30",
+      iconBg: "bg-emerald-500/10",
+      iconColor: "text-emerald-500",
     },
     warning: {
-      bg: "bg-warning-bg hover:bg-warning/10",
-      border: "border-warning-border",
-      iconBg: "bg-warning/10",
-      iconColor: "text-warning",
+      bg: "bg-amber-500/5 hover:bg-amber-500/10 backdrop-blur-md",
+      border: "border-amber-500/20 hover:border-amber-500/30",
+      iconBg: "bg-amber-500/10",
+      iconColor: "text-amber-500",
     },
   }
 
@@ -69,12 +69,12 @@ export function ActionCard({
   const content = (
     <motion.div
       className={cn(
-        "group relative flex items-start gap-4 rounded-2xl border p-5 transition-all cursor-pointer",
+        "group relative flex items-start gap-4 rounded-2xl border p-5 transition-all cursor-pointer shadow-sm hover:shadow-md",
         styles.bg,
         styles.border,
         className
       )}
-      whileHover={{ y: -2, boxShadow: "var(--shadow-md)" }}
+      whileHover={{ y: -2, scale: 1.01 }}
       whileTap={{ scale: 0.99 }}
       transition={springConfigs.snappy}
     >

@@ -48,8 +48,8 @@ export async function getUserLimits(merchantId: string): Promise<UsageLimits> {
       return DEFAULT_LIMITS
     }
 
-    const aiPrefs = data.ai_preferences || {}
-    const dailyLimits = aiPrefs.daily_limits || {}
+    const aiPrefs = (data.ai_preferences || {}) as Record<string, any>
+    const dailyLimits = (aiPrefs.daily_limits || {}) as Record<string, any>
 
     return {
       text_tokens: dailyLimits.text_tokens || DEFAULT_LIMITS.text_tokens,

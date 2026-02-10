@@ -36,8 +36,8 @@ export default async function AdminProductPage({ params }: Props) {
 
   return (
     <ProductEditorClient
-      product={product}
-      categories={categories}
+      product={product as any}
+      categories={categories as any}
       storeId={storeContext.store.id}
       locale={locale}
     />

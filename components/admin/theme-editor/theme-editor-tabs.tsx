@@ -201,7 +201,7 @@ export function ThemeEditorTabs({ initialConfig, storeId, previewToken }: ThemeE
           <Card>
             <CardContent className="pt-6">
               <ColorsSectionEditor
-                colors={config.colors || defaultConfig.colors!}
+                colors={(config.colors || defaultConfig.colors!) as { primary: string; secondary: string; accent: string; background: string; text: string }}
                 onChange={handleColorsChange}
                 logoUrl={config.branding?.logo_url}
               />
@@ -214,7 +214,7 @@ export function ThemeEditorTabs({ initialConfig, storeId, previewToken }: ThemeE
           <Card>
             <CardContent className="pt-6">
               <HeroSectionEditor
-                hero={config.hero || defaultConfig.hero!}
+                hero={(config.hero || defaultConfig.hero!) as Parameters<typeof HeroSectionEditor>[0]["hero"]}
                 onChange={handleHeroChange}
               />
             </CardContent>
@@ -238,7 +238,7 @@ export function ThemeEditorTabs({ initialConfig, storeId, previewToken }: ThemeE
           <Card>
             <CardContent className="pt-6">
               <LayoutSectionEditor
-                layout={config.layout || defaultConfig.layout!}
+                layout={(config.layout || defaultConfig.layout!) as Parameters<typeof LayoutSectionEditor>[0]["layout"]}
                 onChange={handleLayoutChange}
               />
             </CardContent>
@@ -250,7 +250,7 @@ export function ThemeEditorTabs({ initialConfig, storeId, previewToken }: ThemeE
           <Card>
             <CardContent className="pt-6">
               <FooterSectionEditor
-                footer={config.footer || defaultConfig.footer!}
+                footer={(config.footer || defaultConfig.footer!) as Parameters<typeof FooterSectionEditor>[0]["footer"]}
                 onChange={handleFooterChange}
               />
             </CardContent>

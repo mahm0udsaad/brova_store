@@ -4,7 +4,7 @@ import { Sparkles, User, Brain, Cog, CheckCircle2, Loader2, AlertCircle, Refresh
 import { cn } from "@/lib/utils"
 import type { Message, StepUpdate, BulkProgressData } from "./AdminAssistantProvider"
 import { BulkProgressCard } from "./BulkProgressCard"
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, memo } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { Button } from "@/components/ui/button"
@@ -16,7 +16,7 @@ interface AdminAssistantMessageProps {
   onRetry?: () => void
 }
 
-export function AdminAssistantMessage({ message, expanded = false, onRetry }: AdminAssistantMessageProps) {
+export const AdminAssistantMessage = memo(function AdminAssistantMessage({ message, expanded = false, onRetry }: AdminAssistantMessageProps) {
   const locale = useLocale()
   const t = useTranslations("assistant")
   const isRtl = locale === "ar"
@@ -299,7 +299,7 @@ export function AdminAssistantMessage({ message, expanded = false, onRetry }: Ad
       </div>
     </div>
   )
-}
+})
 
 function ToolResultCard({ invocation, t }: { invocation: any; t: ReturnType<typeof useTranslations> }) {
   if (invocation.state !== "result") return null

@@ -652,6 +652,60 @@ select:focus {
   z-index: 9999;
 }
 
-.dark::view-transition-new(root) {
-  z-index: 1;
+/* ... existing code ... */
+
+/* ==========================================================================
+   AI ADMIN THEME
+   Deep space, neon accents, glassmorphism
+   ========================================================================== */
+.theme-admin-ai {
+  /* Deep space background */
+  --background: oklch(0.05 0.01 240);
+  --foreground: oklch(0.98 0 0);
+  
+  /* Glassmorphic cards */
+  --card: oklch(0.1 0.02 240 / 0.4);
+  --card-foreground: oklch(0.98 0 0);
+  
+  /* Neon Accents */
+  --primary: oklch(0.65 0.25 260); /* Electric Blue/Purple */
+  --primary-foreground: oklch(0.98 0 0);
+  
+  --secondary: oklch(0.2 0.05 260);
+  --secondary-foreground: oklch(0.98 0 0);
+  
+  --muted: oklch(0.15 0.02 240);
+  --muted-foreground: oklch(0.7 0.02 240);
+  
+  --accent: oklch(0.2 0.05 260);
+  --accent-foreground: oklch(0.98 0 0);
+  
+  --border: oklch(0.2 0.05 260 / 0.3);
+  --input: oklch(0.2 0.05 260 / 0.3);
+  --ring: oklch(0.65 0.25 260);
+  
+  /* Sidebar specific */
+  --sidebar: oklch(0.05 0.01 240 / 0.6); /* Transparent for blur */
+  --sidebar-foreground: oklch(0.8 0.02 240);
+  --sidebar-primary: oklch(0.65 0.25 260);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.2 0.05 260 / 0.5);
+  --sidebar-accent-foreground: oklch(0.98 0 0);
+  --sidebar-border: oklch(0.2 0.05 260 / 0.2);
+}
+
+.theme-admin-ai .glass-panel {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
+}
+
+.theme-admin-ai .neon-glow {
+  box-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary);
+}
+
+.theme-admin-ai .text-glow {
+  text-shadow: 0 0 10px var(--primary);
 }

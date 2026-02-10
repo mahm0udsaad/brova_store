@@ -22,13 +22,13 @@ export class MarketerAgent {
       case "generate_hashtags":
         return this.generateHashtags(params as { productName: string; category?: string; count?: number })
       case "generate_social_posts":
-        return this.generateSocialPosts(params)
+        return this.generateSocialPosts(params as Parameters<typeof this.generateSocialPosts>[0])
       case "create_campaign":
         return this.createCampaign(params as CampaignCreateParams)
       case "get_campaigns":
-        return this.getCampaigns(params)
+        return this.getCampaigns(params as Parameters<typeof this.getCampaigns>[0])
       case "suggest_content":
-        return this.suggestContent(params)
+        return this.suggestContent(params as Parameters<typeof this.suggestContent>[0])
       default:
         return {
           success: false,

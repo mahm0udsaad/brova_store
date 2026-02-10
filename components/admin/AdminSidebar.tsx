@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, memo } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
@@ -30,6 +30,8 @@ import {
   Truck,
   Rocket,
   CreditCard,
+  Mic,
+  Blocks,
   type LucideIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -59,7 +61,7 @@ interface NavGroup {
 // COMPONENT
 // =============================================================================
 
-export function AdminSidebar({ storeName }: { storeName?: string }) {
+export const AdminSidebar = memo(function AdminSidebar({ storeName }: { storeName?: string }) {
   const pathname = usePathname()
   const locale = useLocale()
   const t = useTranslations("admin")
@@ -92,6 +94,14 @@ export function AdminSidebar({ storeName }: { storeName?: string }) {
         { id: "media", label: t("media"), href: "/admin/media", icon: ImageIcon, group: "content" },
         { id: "marketing", label: t("marketing"), href: "/admin/marketing", icon: Megaphone, badge: t("new"), badgeVariant: "new", group: "content" },
         { id: "bulk-deals", label: t("bulkDeals"), href: "/admin/bulk-deals", icon: Layers, group: "content" },
+      ],
+    },
+    {
+      id: "ai-tools",
+      label: t("navGroups.aiTools"),
+      items: [
+        { id: "voice-assistant", label: t("voiceAssistant"), href: "/admin/voice-assistant", icon: Mic, badge: t("new"), badgeVariant: "new", group: "content" },
+        { id: "store-builder", label: t("storeBuilder"), href: "/admin/store-builder", icon: Blocks, badge: t("new"), badgeVariant: "new", group: "content" },
       ],
     },
     {
@@ -145,10 +155,10 @@ export function AdminSidebar({ storeName }: { storeName?: string }) {
   // =============================================================================
 
   const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => (
-    <div className="flex h-full flex-col bg-sidebar">
+    <div className="flex h-full flex-col bg-sidebar/50 backdrop-blur-xl border-r border-white/5">
       {/* Logo Header */}
       <div className={cn(
-        "flex items-center justify-between border-b border-sidebar-border",
+        "flex items-center justify-between border-b border-white/5",
         isCollapsed && !isMobile ? "h-16 px-2" : "h-16 px-4"
       )}>
         <Link href={buildHref("/admin")} className="flex items-center gap-3">
@@ -217,16 +227,16 @@ export function AdminSidebar({ storeName }: { storeName?: string }) {
                     key={item.id}
                     href={buildHref(item.href)}
                     className={cn(
-                      "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150",
+                      "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-300",
                       active
-                        ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                        ? "bg-primary/10 text-primary shadow-[0_0_20px_-5px_rgba(var(--primary),0.3)] border border-primary/20"
+                        : "text-muted-foreground hover:bg-white/5 hover:text-foreground hover:shadow-[0_0_15px_-5px_rgba(255,255,255,0.1)]",
                       isCollapsed && !isMobile && "justify-center px-2"
                     )}
                   >
                     <Icon className={cn(
-                      "h-[18px] w-[18px] flex-shrink-0 transition-transform group-hover:scale-105",
-                      active ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/60"
+                      "h-[18px] w-[18px] flex-shrink-0 transition-transform duration-300 group-hover:scale-110",
+                      active ? "text-primary drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]" : "text-muted-foreground group-hover:text-foreground"
                     )} strokeWidth={1.75} />
                     
                     <AnimatePresence mode="wait">
@@ -249,12 +259,12 @@ export function AdminSidebar({ storeName }: { storeName?: string }) {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.8 }}
                         className={cn(
-                          "px-1.5 py-0.5 text-[10px] font-semibold rounded-full",
+                          "px-1.5 py-0.5 text-[10px] font-semibold rounded-full border",
                           active
-                            ? "bg-sidebar-primary-foreground/20 text-sidebar-primary-foreground"
+                            ? "bg-primary/20 border-primary/30 text-primary"
                             : item.badgeVariant === "new"
-                              ? "bg-success/15 text-success"
-                              : "bg-sidebar-accent text-sidebar-foreground"
+                              ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-500"
+                              : "bg-white/5 border-white/10 text-muted-foreground"
                         )}
                       >
                         {item.badge}
@@ -265,7 +275,7 @@ export function AdminSidebar({ storeName }: { storeName?: string }) {
                     {active && isCollapsed && !isMobile && (
                       <motion.div
                         layoutId="sidebar-active-indicator"
-                        className="absolute ltr:-right-2 rtl:-left-2 top-1/2 -translate-y-1/2 w-1 h-5 bg-sidebar-primary-foreground rounded-full"
+                        className="absolute ltr:-right-2 rtl:-left-2 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-full shadow-[0_0_10px_rgba(var(--primary),0.8)]"
                         transition={springConfigs.snappy}
                       />
                     )}
@@ -372,4 +382,4 @@ export function AdminSidebar({ storeName }: { storeName?: string }) {
       />
     </>
   )
-}
+})

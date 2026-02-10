@@ -43,10 +43,10 @@ export default async function AdminProductsPage({
 
   return (
     <ProductsPageClient
-      initialProducts={productData.products}
+      initialProducts={productData.products as any}
       initialNextCursor={productData.nextCursor}
       initialTotalCount={productData.totalCount}
-      categories={categories}
+      categories={categories as any}
     />
   )
 }

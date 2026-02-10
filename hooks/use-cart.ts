@@ -70,7 +70,7 @@ export function useCart() {
     clearCart()
   }, [])
 
-  const subtotal = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0)
+  const subtotal = cart.reduce((acc, item) => acc + (item.product.price ?? 0) * item.quantity, 0)
   const shippingFee = cart.length > 0 ? 20 : 0
   const total = subtotal + shippingFee
   const itemCount = cart.reduce((acc, item) => acc + item.quantity, 0)

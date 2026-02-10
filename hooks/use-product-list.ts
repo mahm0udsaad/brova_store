@@ -113,7 +113,7 @@ export function useProductList(options: UseProductListOptions = {}) {
   }, [fetchProducts])
 
   // Refetch when filters change (debounced for search)
-  const searchTimeoutRef = useRef<NodeJS.Timeout>()
+  const searchTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
   const updateFilter = useCallback(<K extends keyof ProductListFilters>(key: K, value: ProductListFilters[K]) => {
     setFilters(prev => ({ ...prev, [key]: value }))
   }, [])

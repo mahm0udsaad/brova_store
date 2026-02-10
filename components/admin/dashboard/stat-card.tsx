@@ -46,20 +46,20 @@ export function StatCard({
   // Variant styles
   const variantStyles = {
     default: {
-      iconBg: "bg-muted",
-      iconColor: "text-foreground",
+      iconBg: "bg-primary/10",
+      iconColor: "text-primary",
     },
     success: {
-      iconBg: "bg-success-bg",
-      iconColor: "text-success",
+      iconBg: "bg-emerald-500/10",
+      iconColor: "text-emerald-500",
     },
     warning: {
-      iconBg: "bg-warning-bg",
-      iconColor: "text-warning",
+      iconBg: "bg-amber-500/10",
+      iconColor: "text-amber-500",
     },
     info: {
-      iconBg: "bg-info-bg",
-      iconColor: "text-info",
+      iconBg: "bg-blue-500/10",
+      iconColor: "text-blue-500",
     },
   }
 
@@ -76,24 +76,24 @@ export function StatCard({
 
   const trendColor = trend
     ? trend.value > 0
-      ? "text-success"
+      ? "text-emerald-500"
       : trend.value < 0
-        ? "text-destructive"
+        ? "text-rose-500"
         : "text-muted-foreground"
     : ""
 
   if (loading) {
     return (
       <div className={cn(
-        "rounded-2xl border border-border bg-card p-5 animate-pulse",
+        "rounded-2xl border border-white/5 bg-white/5 p-5 animate-pulse backdrop-blur-sm",
         className
       )}>
         <div className="flex items-start justify-between mb-3">
-          <div className="h-4 w-24 bg-muted rounded" />
-          <div className="h-10 w-10 bg-muted rounded-xl" />
+          <div className="h-4 w-24 bg-white/10 rounded" />
+          <div className="h-10 w-10 bg-white/10 rounded-xl" />
         </div>
-        <div className="h-8 w-20 bg-muted rounded mb-2" />
-        <div className="h-3 w-32 bg-muted rounded" />
+        <div className="h-8 w-20 bg-white/10 rounded mb-2" />
+        <div className="h-3 w-32 bg-white/10 rounded" />
       </div>
     )
   }
@@ -101,7 +101,7 @@ export function StatCard({
   return (
     <motion.div
       className={cn(
-        "rounded-2xl border border-border bg-card p-5 transition-shadow hover:shadow-md",
+        "rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-5 transition-all duration-300 hover:border-primary/30 hover:shadow-[0_0_20px_-10px_rgba(var(--primary),0.3)]",
         className
       )}
       initial={{ opacity: 0, y: 8 }}

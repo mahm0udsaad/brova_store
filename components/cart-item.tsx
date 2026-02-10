@@ -73,7 +73,7 @@ export function CartItem({ item, onUpdateQuantity, index = 0 }: CartItemProps) {
                 {t("customDesign")}
               </span>
             )}
-            <p className="text-lg font-semibold text-foreground mt-0.5">{formatCurrency(item.product.price)}</p>
+            <p className="text-lg font-semibold text-foreground mt-0.5">{formatCurrency(item.product.price ?? 0)}</p>
             <p className="text-sm text-muted-foreground">
               {t("sizeLabel")} {item.selectedSize}
             </p>
@@ -131,7 +131,7 @@ export function CartItem({ item, onUpdateQuantity, index = 0 }: CartItemProps) {
           </div>
 
           <span className="text-sm text-muted-foreground ltr:ml-auto rtl:mr-auto">
-            {formatCurrency(item.product.price * item.quantity)}
+            {formatCurrency((item.product.price ?? 0) * item.quantity)}
           </span>
         </div>
       </div>

@@ -369,7 +369,7 @@ export const confirmAndPersist = tool({
         .from("store_products")
         .insert({
           store_id,
-          name: draft.name,
+          name: draft.name ?? "Untitled",
           name_ar: draft.name_ar,
           description: draft.description,
           description_ar: draft.description_ar,
@@ -384,7 +384,7 @@ export const confirmAndPersist = tool({
           ai_generated: true,
           ai_confidence: draft.ai_confidence,
           inventory: 0,
-        })
+        } as any)
         .select("id")
         .single()
 

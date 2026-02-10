@@ -60,7 +60,7 @@ export function useProductForm(options: UseProductFormOptions = {}) {
   const [lastSaved, setLastSaved] = useState<string | null>(null)
   const [dirty, setDirty] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const autosaveTimerRef = useRef<NodeJS.Timeout>()
+  const autosaveTimerRef = useRef<NodeJS.Timeout | undefined>(undefined)
   const aiPausedRef = useRef(false)
 
   const updateField = useCallback(<K extends keyof ProductFormValues>(field: K, value: ProductFormValues[K]) => {

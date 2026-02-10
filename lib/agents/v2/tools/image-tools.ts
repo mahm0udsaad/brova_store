@@ -199,7 +199,7 @@ export const replaceImage = tool({
     }
 
     // Verify the new image is in the draft's image set
-    if (!draft.image_urls.includes(new_primary_url)) {
+    if (!draft.image_urls?.includes(new_primary_url)) {
       return {
         success: false,
         error: "New primary image must be from the product's existing image set",

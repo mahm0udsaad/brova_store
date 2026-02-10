@@ -29,3 +29,6 @@ export async function createClient() {
     },
   })
 }
+
+// Re-export createClient as createServerClient for callers that use that name
+export { createClient as createServerClient }

@@ -1,6 +1,6 @@
 // Admin Assistant Component Exports
 
-export { AdminAssistantProvider, useAdminAssistant } from "./AdminAssistantProvider"
+export { AdminAssistantProvider, useAdminAssistant, useAdminAssistantDisplayMode, useAdminAssistantActivity, useAdminAssistantActions, useAdminAssistantState } from "./AdminAssistantProvider"
 export { AdminAssistantFab } from "./AdminAssistantFab"
 export { AdminAssistantPanel } from "./AdminAssistantPanel"
 export { AdminAssistantSidePanel } from "./AdminAssistantSidePanel"

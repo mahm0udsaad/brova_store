@@ -63,10 +63,11 @@ export async function createStoreCheckout(
     // Get merchant's plan to determine fee
     let feePercentage = 0.02 // Default 2% for no plan
 
-    if (store.organizations?.subscription_plan) {
-      const plan = await getPlanById(store.organizations.subscription_plan)
+    const org = Array.isArray(store.organizations) ? store.organizations[0] : store.organizations
+    if (org?.subscription_plan) {
+      const plan = await getPlanById(org.subscription_plan)
       if (plan) {
-        feePercentage = plan.transaction_fee / 100 // Convert to decimal
+        feePercentage = parseFloat(plan.transaction_fee_percent) / 100 // Convert to decimal
       }
     }
 

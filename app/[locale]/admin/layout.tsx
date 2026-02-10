@@ -33,14 +33,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const storeSlug = context?.store.slug || ""
 
   return (
-    <AdminAuthWrapper>
-      <AdminAssistantProvider>
-        <ConciergeGate>
-          <AdminShell storeName={storeName} storeStatus={storeStatus} storeSlug={storeSlug}>
-            {children}
-          </AdminShell>
-        </ConciergeGate>
-      </AdminAssistantProvider>
-    </AdminAuthWrapper>
+    <div className="dark theme-admin-ai min-h-screen bg-background font-sans text-foreground selection:bg-primary/30">
+      <AdminAuthWrapper>
+        <AdminAssistantProvider>
+          <ConciergeGate>
+            <AdminShell storeName={storeName} storeStatus={storeStatus} storeSlug={storeSlug}>
+              {children}
+            </AdminShell>
+          </ConciergeGate>
+        </AdminAssistantProvider>
+      </AdminAuthWrapper>
+    </div>
   )
 }

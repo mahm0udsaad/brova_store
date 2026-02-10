@@ -2,6 +2,7 @@ export const admin = {
   title: "لوحة بروڤا",
   metadataTitle: "لوحة الإدارة | بروڤا",
   metadataDescription: "لوحة تحكم لإدارة المنتجات والطلبات والمخزون",
+  searchPlaceholder: "اسأل الذكاء الاصطناعي أو ابحث...",
   dashboardLabel: "لوحة التحكم",
   media: "الوسائط",
   marketing: "التسويق",
@@ -56,9 +57,12 @@ export const admin = {
   navGroups: {
     main: "الرئيسية",
     content: "المحتوى",
+    aiTools: "أدوات الذكاء",
     analytics: "التحليلات",
     settings: "الإعدادات",
   },
+  voiceAssistant: "المساعد الصوتي",
+  storeBuilder: "بناء المتجر",
   dashboard: {
     overview: "نظرة عامة",
     quickActions: "الإجراءات السريعة",
@@ -74,7 +78,6 @@ export const admin = {
       new: "جديد",
     },
   },
-  dashboardLabel: "لوحة التحكم",
   storeMissing: {
     title: "لم يتم العثور على متجر",
     subtitle: "يرجى إكمال إعداد متجرك للوصول إلى لوحة التحكم",

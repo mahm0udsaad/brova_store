@@ -64,10 +64,12 @@ export class UIControllerAgent {
    */
   private async navigateTo(path: string, params?: Record<string, any>): Promise<AgentResult> {
     try {
+      const fullPath = params
+        ? `${path}?${new URLSearchParams(params).toString()}`
+        : path
       await this.createCommand({
         type: "navigate",
-        path,
-        params,
+        path: fullPath,
       })
 
       return {

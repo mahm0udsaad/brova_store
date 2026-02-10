@@ -26,6 +26,7 @@ import { landing } from './landing'
 import { auth } from './auth'
 import { setup } from './setup'
 import { generativeUi } from './generative-ui'
+import { storefront } from './storefront'
 
 export default {
   common,
@@ -56,4 +57,5 @@ export default {
   auth,
   setup,
   generativeUi,
+  storefront,
 }

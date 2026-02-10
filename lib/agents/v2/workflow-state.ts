@@ -135,7 +135,7 @@ export async function advanceWorkflowStage(
       .from("ai_workflow_state")
       .update({
         current_stage: isComplete ? current.total_stages : nextStage,
-        stage_data: { ...current.stage_data, ...stageData },
+        stage_data: { ...(current.stage_data as Record<string, any> || {}), ...stageData },
         status: isComplete ? "completed" : "in_progress",
         completed_at: isComplete ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),
@@ -174,7 +174,7 @@ export async function updateWorkflowData(
     const { error } = await admin
       .from("ai_workflow_state")
       .update({
-        stage_data: { ...(current?.stage_data || {}), ...stageData },
+        stage_data: { ...(current?.stage_data as Record<string, any> || {}), ...stageData },
         updated_at: new Date().toISOString(),
       })
       .eq("id", workflowId)

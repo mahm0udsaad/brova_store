@@ -33,6 +33,9 @@ export function useAICommands(options?: UseAICommandsOptions) {
   const router = useRouter()
   const supabaseRef = useRef(createClient())
   const executingCommands = useRef(new Set<string>())
+  // Store options in a ref to avoid recreating executeCommand when options object ref changes
+  const optionsRef = useRef(options)
+  optionsRef.current = options
 
   const executeCommand = useCallback(
     async (commandRecord: AICommandRecord) => {
@@ -160,8 +163,8 @@ export function useAICommands(options?: UseAICommandsOptions) {
           })
           .eq("id", commandRecord.id)
 
-        if (options?.onCommandExecuted) {
-          options.onCommandExecuted(command, result)
+        if (optionsRef.current?.onCommandExecuted) {
+          optionsRef.current.onCommandExecuted(command, result)
         }
       } catch (error) {
         console.error("Command execution failed:", error)
@@ -177,14 +180,14 @@ export function useAICommands(options?: UseAICommandsOptions) {
           })
           .eq("id", commandRecord.id)
 
-        if (options?.onCommandFailed) {
-          options.onCommandFailed(command, errorMessage)
+        if (optionsRef.current?.onCommandFailed) {
+          optionsRef.current.onCommandFailed(command, errorMessage)
         }
       } finally {
         executingCommands.current.delete(commandRecord.id)
       }
     },
-    [router, options]
+    [router]
   )
 
   useEffect(() => {

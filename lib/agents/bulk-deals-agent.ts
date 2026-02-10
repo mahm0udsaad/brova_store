@@ -100,10 +100,10 @@ export class BulkDealsAgent extends BaseAgent {
               for (const operation of operations) {
                 switch (operation) {
                   case "remove_background": {
-                    const result = await generateWithRetry({
-                      sourceImageUrl: imageUrl,
-                      operation: "remove_background",
-                    })
+                    const result = await generateWithRetry(
+                      "Remove the background from this product image, keep only the product on a transparent/white background",
+                      [imageUrl],
+                    )
                     if (result) {
                       processedUrls.push(result)
                     }
@@ -113,11 +113,10 @@ export class BulkDealsAgent extends BaseAgent {
                   case "generate_showcase": {
                     // Generate multiple showcase variations
                     for (let i = 0; i < productsPerImage; i++) {
-                      const result = await generateWithRetry({
-                        sourceImageUrl: imageUrl,
-                        operation: "showcase",
-                        style: "studio",
-                      })
+                      const result = await generateWithRetry(
+                        "Create a professional studio showcase image for this product with clean lighting and minimal background",
+                        [imageUrl],
+                      )
                       if (result) {
                         processedUrls.push(result)
                       }
@@ -126,10 +125,10 @@ export class BulkDealsAgent extends BaseAgent {
                   }
 
                   case "generate_lifestyle": {
-                    const result = await generateWithRetry({
-                      sourceImageUrl: imageUrl,
-                      operation: "lifestyle",
-                    })
+                    const result = await generateWithRetry(
+                      "Create a lifestyle context image for this product showing it in a natural, appealing setting",
+                      [imageUrl],
+                    )
                     if (result) {
                       processedUrls.push(result)
                     }
@@ -159,11 +158,11 @@ export class BulkDealsAgent extends BaseAgent {
       // Update batch in database if batchId provided
       if (batchId) {
         await supabase
-          .from("bulk_batches")
+          .from("bulk_deal_batches")
           .update({
             status: "processed",
-            processed_at: new Date().toISOString(),
-            results: JSON.stringify(results),
+            updated_at: new Date().toISOString(),
+            product_groups: results as any,
           })
           .eq("id", batchId)
       }
@@ -244,7 +243,7 @@ export class BulkDealsAgent extends BaseAgent {
 
       // Get batch details
       const { data: batch, error: batchError } = await supabase
-        .from("bulk_batches")
+        .from("bulk_deal_batches")
         .select("*")
         .eq("id", batchId)
         .single()
@@ -253,12 +252,12 @@ export class BulkDealsAgent extends BaseAgent {
         return this.formatError("Batch not found", "create_products_from_batch")
       }
 
-      const results = JSON.parse(batch.results || "[]")
+      const results = Array.isArray(batch.product_groups) ? batch.product_groups : []
       const productsCreated: string[] = []
 
       // Create products from processed images
-      for (const result of results) {
-        if (!result.success || result.processedUrls.length === 0) continue
+      for (const result of results as any[]) {
+        if (!result?.success || !result.processedUrls?.length) continue
 
         // Extract product name from filename or generate one
         const productName = this.extractProductName(result.originalUrl)
@@ -267,12 +266,10 @@ export class BulkDealsAgent extends BaseAgent {
           .from("products")
           .insert({
             name: productName,
-            merchant_id: this.userId,
             image_url: result.processedUrls[0],
             images: result.processedUrls,
             published: autoPublish,
-            created_at: new Date().toISOString(),
-          })
+          } as any)
           .select()
           .single()
 
@@ -283,7 +280,7 @@ export class BulkDealsAgent extends BaseAgent {
 
       // Update batch status
       await supabase
-        .from("bulk_batches")
+        .from("bulk_deal_batches")
         .update({
           status: "completed",
           completed_at: new Date().toISOString(),

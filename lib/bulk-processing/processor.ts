@@ -57,8 +57,8 @@ export async function processBulkBatch(
       throw new Error("Batch not found")
     }
 
-    const config = batch.config as BatchConfig
-    const sourceUrls = batch.source_urls as string[]
+    const config = batch.config as unknown as BatchConfig
+    const sourceUrls = batch.source_urls as unknown as string[]
 
     // Step 1: Update status to analyzing
     await updateBatchStatus(admin, batchId, "analyzing", {

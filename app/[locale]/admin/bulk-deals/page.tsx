@@ -16,5 +16,5 @@ export default async function BulkDealsPage() {
     .order("created_at", { ascending: false })
     .limit(20)
 
-  return <BulkDealsPageClient initialBatches={batches || []} />
+  return <BulkDealsPageClient initialBatches={(batches || []) as any} />
 }

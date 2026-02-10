@@ -30,7 +30,7 @@ export default async function NewProductPage({ params }: Props) {
   return (
     <ProductEditorClient
       product={null}
-      categories={categories}
+      categories={categories as any}
       storeId={storeContext.store.id}
       locale={locale}
       isNew

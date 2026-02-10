@@ -79,9 +79,9 @@ export default async function SettingsPage({
 
   return (
     <SettingsPageClient
-      initialSettings={settings}
-      initialContact={contact}
-      aiUsage={aiUsage || []}
+      initialSettings={settings as any}
+      initialContact={contact as any}
+      aiUsage={(aiUsage || []) as any}
     />
   )
 }

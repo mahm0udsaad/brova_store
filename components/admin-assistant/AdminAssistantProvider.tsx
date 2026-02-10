@@ -92,6 +92,22 @@ interface AdminAssistantStateContextType {
 const AdminAssistantActionsContext = createContext<AdminAssistantActionsContextType | null>(null)
 const AdminAssistantStateContext = createContext<AdminAssistantStateContextType | null>(null)
 
+// Separate context for displayMode so layout components don't re-render on message changes
+interface AdminAssistantDisplayModeContextType {
+  displayMode: AssistantDisplayMode
+  isOpen: boolean
+}
+const AdminAssistantDisplayModeContext = createContext<AdminAssistantDisplayModeContextType | null>(null)
+
+// Separate context for AI activity status (used by FAB and indicators)
+interface AdminAssistantActivityContextType {
+  isLoading: boolean
+  isGenerating: boolean
+  currentActivity: string | null
+  currentAgent: string | null
+}
+const AdminAssistantActivityContext = createContext<AdminAssistantActivityContextType | null>(null)
+
 // Hook for stable actions only (won't re-render when messages change)
 export function useAdminAssistantActions() {
   const context = useContext(AdminAssistantActionsContext)
@@ -106,6 +122,26 @@ export function useAdminAssistantState() {
   const context = useContext(AdminAssistantStateContext)
   if (!context) {
     throw new Error("useAdminAssistantState must be used within AdminAssistantProvider")
+  }
+  return context
+}
+
+// Hook for display mode only — use this in layout components (AdminShell)
+// to avoid re-rendering when messages/loading state changes
+export function useAdminAssistantDisplayMode() {
+  const context = useContext(AdminAssistantDisplayModeContext)
+  if (!context) {
+    throw new Error("useAdminAssistantDisplayMode must be used within AdminAssistantProvider")
+  }
+  return context
+}
+
+// Hook for AI activity status only — use in FAB and activity indicators
+// to avoid re-rendering when messages change
+export function useAdminAssistantActivity() {
+  const context = useContext(AdminAssistantActivityContext)
+  if (!context) {
+    throw new Error("useAdminAssistantActivity must be used within AdminAssistantProvider")
   }
   return context
 }
@@ -609,16 +645,32 @@ export function AdminAssistantProvider({ children }: AdminAssistantProviderProps
     currentAgent,
   }), [displayMode, isOpen, messages, isLoading, pageContext, screenshotCount, maxScreenshots, isGenerating, currentActivity, currentAgent])
 
+  const displayModeValue = useMemo(() => ({
+    displayMode,
+    isOpen,
+  }), [displayMode, isOpen])
+
+  const activityValue = useMemo(() => ({
+    isLoading,
+    isGenerating,
+    currentActivity,
+    currentAgent,
+  }), [isLoading, isGenerating, currentActivity, currentAgent])
+
   return (
     <AdminAssistantActionsContext.Provider value={actions}>
-      <AdminAssistantStateContext.Provider value={state}>
-        {children}
-        <AdminAssistantFab />
-        {displayMode === "panel" ? (
-          <AdminAssistantPanel />
-        ) : null}
-        {/* Side panel is now handled by the layout for better integration */}
-      </AdminAssistantStateContext.Provider>
+      <AdminAssistantDisplayModeContext.Provider value={displayModeValue}>
+        <AdminAssistantActivityContext.Provider value={activityValue}>
+          <AdminAssistantStateContext.Provider value={state}>
+            {children}
+            <AdminAssistantFab />
+            {displayMode === "panel" ? (
+              <AdminAssistantPanel />
+            ) : null}
+            {/* Side panel is now handled by the layout for better integration */}
+          </AdminAssistantStateContext.Provider>
+        </AdminAssistantActivityContext.Provider>
+      </AdminAssistantDisplayModeContext.Provider>
     </AdminAssistantActionsContext.Provider>
   )
 }

@@ -284,7 +284,7 @@ export async function getStorefrontCategories(
 
   // Extract unique categories
   const categories = new Set<string>()
-  data.forEach(row => {
+  data.forEach((row: any) => {
     const cat = row[categoryField]
     if (cat) categories.add(cat)
   })

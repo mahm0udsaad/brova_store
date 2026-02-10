@@ -564,12 +564,11 @@ Important:
       const result = await generateObject({
         model: models.pro,
         schema,
-        prompt,
         messages: [
           {
-            role: "user",
+            role: "user" as const,
             content: [
-              { type: "text", text: prompt },
+              { type: "text" as const, text: prompt },
               {
                 type: "image" as const,
                 image: primary_image_url,

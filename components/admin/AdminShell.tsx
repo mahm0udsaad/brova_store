@@ -1,6 +1,6 @@
 "use client"
 
-import { useAdminAssistantState } from "@/components/admin-assistant/AdminAssistantProvider"
+import { useAdminAssistantDisplayMode } from "@/components/admin-assistant/AdminAssistantProvider"
 import { AdminSidebar } from "@/components/admin/AdminSidebar"
 import { AdminAssistantSidePanel } from "@/components/admin-assistant/AdminAssistantSidePanel"
 import { AdminHeader } from "@/components/admin/AdminHeader"
@@ -14,11 +14,11 @@ interface AdminShellProps {
 }
 
 export function AdminShell({ children, storeName, storeStatus = "draft", storeSlug = "" }: AdminShellProps) {
-  const { displayMode } = useAdminAssistantState() // Only subscribes to state, no actions needed
+  const { displayMode } = useAdminAssistantDisplayMode() // Only re-renders when displayMode changes, not on message/loading updates
   const isSidePanelOpen = displayMode === "side-panel"
 
   return (
-    <div className="flex min-h-screen bg-background isolate">
+    <div className="flex min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-indigo-900/20 via-background to-background isolate selection:bg-primary/20">
       <AdminSidebar storeName={storeName} />
       <div className="flex flex-1 min-w-0">
         <main className={cn(

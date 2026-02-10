@@ -1,9 +1,12 @@
-import { redirect, notFound } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import HomePageClient from '../home-page-client'
+import { ThemeRenderer } from '@/lib/theme/renderer'
+import { themeComponentRegistry } from '@/lib/theme/registry'
+import { getTemplateById, generalTemplate } from '@/lib/theme/templates'
 
 interface PreviewPageProps {
-  searchParams: Promise<{ token?: string }>
+  searchParams: Promise<{ token?: string; template?: string }>
   params: Promise<{ locale: string }>
 }
 
@@ -14,8 +17,21 @@ interface PreviewPageProps {
  * Token is validated against store_preview_tokens table.
  */
 export default async function PreviewPage({ searchParams, params }: PreviewPageProps) {
-  const { token } = await searchParams
+  const { token, template } = await searchParams
   const { locale } = await params
+
+  if (!token && template) {
+    const selectedTemplate = getTemplateById(template) ?? generalTemplate
+    return (
+      <ThemeRenderer
+        nodes={selectedTemplate.nodes}
+        registry={themeComponentRegistry}
+        locale={locale as any}
+        settings={selectedTemplate.settings}
+        preview
+      />
+    )
+  }
 
   if (!token) {
     notFound()
@@ -102,12 +118,12 @@ export default async function PreviewPage({ searchParams, params }: PreviewPageP
     <div className="relative">
       {/* Preview Banner */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-yellow-500 text-black py-2 px-4 text-center text-sm font-medium shadow-md">
-        <span className="mr-2">🔍</span>
+        <span className="me-2">🔍</span>
         <span>Preview Mode</span>
         <span className="mx-2">•</span>
         <span className="font-normal">This store is not yet published. Only people with this link can view it.</span>
       </div>
-      
+
       {/* Store Content with padding for banner */}
       <div className="pt-10">
         <HomePageClient products={transformedProducts} />

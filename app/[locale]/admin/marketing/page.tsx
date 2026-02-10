@@ -1,6 +1,8 @@
+import { createServerClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { MarketingPageClient } from "./marketing-page-client"
 import { getTranslations } from "next-intl/server"
+import { redirect } from "next/navigation"
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params
@@ -13,7 +15,38 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 }
 
 export default async function MarketingPage() {
+  const supabase = await createServerClient()
   const admin = createAdminClient()
+
+  // Get current user and their store
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect("/login")
+  }
+
+  // Get user's organization and store
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("id")
+    .eq("owner_id", user.id)
+    .single()
+
+  if (!org) {
+    redirect("/onboarding")
+  }
+
+  const { data: store } = await supabase
+    .from("stores")
+    .select("id")
+    .eq("organization_id", org.id)
+    .single()
+
+  if (!store) {
+    redirect("/onboarding")
+  }
 
   // Fetch campaigns
   const { data: campaigns } = await admin
@@ -21,17 +54,18 @@ export default async function MarketingPage() {
     .select("*")
     .order("created_at", { ascending: false })
 
-  // Fetch products for campaign targeting
-  const { data: products } = await admin
-    .from("products")
-    .select("id, name, image_url, price, category_id")
-    .eq("published", true)
+  // Fetch products for this store
+  const { data: products } = await supabase
+    .from("store_products")
+    .select("id, name")
+    .eq("store_id", store.id)
     .order("name")
 
   return (
     <MarketingPageClient
-      initialCampaigns={campaigns || []}
-      products={products || []}
+      initialCampaigns={(campaigns || []) as any}
+      products={(products || []) as any}
+      storeId={store.id}
     />
   )
 }

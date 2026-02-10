@@ -19,6 +19,9 @@ import {
   Sparkles,
   Wand2,
   ChevronRight,
+  Video,
+  Share2,
+  Zap,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -26,6 +29,9 @@ import { useAdminAssistantActions } from "@/components/admin-assistant/AdminAssi
 import { InlineMarketingGenerator } from "@/components/admin/inline-marketing-generator"
 import { CampaignStats } from "@/components/admin/marketing/campaign-stats"
 import { CampaignCard } from "@/components/admin/marketing/campaign-card"
+import { VideoGenerationPanel } from "@/components/admin/marketing/video-generation-panel"
+import { SocialMediaPanel } from "@/components/admin/marketing/social-media-panel"
+import { BulkAIPanel } from "@/components/admin/marketing/bulk-ai-panel"
 import { useTranslations } from "next-intl"
 
 interface Campaign {
@@ -54,6 +60,7 @@ interface Product {
 interface MarketingPageClientProps {
   initialCampaigns: Campaign[]
   products: Product[]
+  storeId: string
 }
 
 const typeConfig = {
@@ -73,14 +80,14 @@ const statusConfig = {
   cancelled: { icon: XCircle, labelKey: "marketingPage.statuses.cancelled", color: "text-red-500 bg-red-500/10" },
 }
 
-export function MarketingPageClient({ initialCampaigns, products }: MarketingPageClientProps) {
+export function MarketingPageClient({ initialCampaigns, products, storeId }: MarketingPageClientProps) {
   const t = useTranslations("admin")
   const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns)
   const [searchQuery, setSearchQuery] = useState("")
   const [filterType, setFilterType] = useState<string>("all")
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [showNewCampaign, setShowNewCampaign] = useState(false)
-  const [activeView, setActiveView] = useState<"campaigns" | "generator">("campaigns")
+  const [activeView, setActiveView] = useState<"campaigns" | "generator" | "video" | "social" | "bulk-ai">("campaigns")
   const [toast, setToast] = useState<{ message: string; variant: "success" | "error" | "info" } | null>(null)
   const { setPageContext } = useAdminAssistantActions() // Only subscribes to stable actions
 
@@ -204,34 +211,70 @@ export function MarketingPageClient({ initialCampaigns, products }: MarketingPag
           </div>
           
           {/* View Toggle */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto">
             <div className="flex items-center rounded-lg border bg-muted/50 p-1">
               <button
                 onClick={() => setActiveView("campaigns")}
                 className={cn(
-                  "px-4 py-2 rounded-md text-sm font-medium transition-all",
+                  "px-3 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap",
                   activeView === "campaigns"
                     ? "bg-background shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <FileText className="w-4 h-4 inline mr-2" />
+                <FileText className="w-4 h-4 inline mr-1.5" />
                 {t("marketingPage.view.campaigns")}
               </button>
               <button
                 onClick={() => setActiveView("generator")}
                 className={cn(
-                  "px-4 py-2 rounded-md text-sm font-medium transition-all",
+                  "px-3 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap",
                   activeView === "generator"
                     ? "bg-background shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <Sparkles className="w-4 h-4 inline mr-2" />
+                <Sparkles className="w-4 h-4 inline mr-1.5" />
                 {t("marketingPage.view.generator")}
               </button>
+              <button
+                onClick={() => setActiveView("video")}
+                className={cn(
+                  "px-3 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap",
+                  activeView === "video"
+                    ? "bg-background shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Video className="w-4 h-4 inline mr-1.5" />
+                Video
+              </button>
+              <button
+                onClick={() => setActiveView("social")}
+                className={cn(
+                  "px-3 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap",
+                  activeView === "social"
+                    ? "bg-background shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Share2 className="w-4 h-4 inline mr-1.5" />
+                Social
+              </button>
+              <button
+                onClick={() => setActiveView("bulk-ai")}
+                className={cn(
+                  "px-3 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap",
+                  activeView === "bulk-ai"
+                    ? "bg-background shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Zap className="w-4 h-4 inline mr-1.5" />
+                Bulk AI
+              </button>
             </div>
-            
+
             {activeView === "campaigns" && (
               <Button
                 onClick={() => setShowNewCampaign(true)}
@@ -247,6 +290,12 @@ export function MarketingPageClient({ initialCampaigns, products }: MarketingPag
         {/* Conditional Content */}
         {activeView === "generator" ? (
           <InlineMarketingGenerator products={products} />
+        ) : activeView === "video" ? (
+          <VideoGenerationPanel storeId={storeId} />
+        ) : activeView === "social" ? (
+          <SocialMediaPanel storeId={storeId} />
+        ) : activeView === "bulk-ai" ? (
+          <BulkAIPanel storeId={storeId} products={products} />
         ) : (
           <>
             <CampaignStats

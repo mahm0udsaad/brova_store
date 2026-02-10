@@ -2,13 +2,15 @@
 
 import { motion, AnimatePresence } from "framer-motion"
 import { Sparkles, X, MessageSquare, Loader2 } from "lucide-react"
-import { useAdminAssistant } from "./AdminAssistantProvider"
+import { useAdminAssistantActions, useAdminAssistantDisplayMode, useAdminAssistantActivity } from "./AdminAssistantProvider"
 import { cn } from "@/lib/utils"
 import { springConfigs } from "@/lib/ui/motion-presets"
 import { useLocale } from "next-intl"
 
 export function AdminAssistantFab() {
-  const { isOpen, toggle, isLoading, isGenerating, currentActivity } = useAdminAssistant()
+  const { isOpen } = useAdminAssistantDisplayMode()
+  const { toggle } = useAdminAssistantActions()
+  const { isLoading, isGenerating, currentActivity } = useAdminAssistantActivity()
   const locale = useLocale()
   const isRtl = locale === "ar"
   const isActive = isLoading || isGenerating

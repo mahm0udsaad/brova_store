@@ -48,7 +48,7 @@ ${batch_id ? `Batch ID: ${batch_id}` : ""}`,
 
       // Extract the tool result from the agent's steps
       const toolResults = result.steps.flatMap(
-        (s) => s.toolResults?.map((tr) => tr.result) || []
+        (s) => s.toolResults?.map((tr) => tr.output) || []
       )
       return toolResults[0] || { groups: [], total_images: image_urls.length, total_groups: 0 }
     },
@@ -100,7 +100,7 @@ Use the generate_product_details tool with the full group data.`,
 
         for (const r of batchResults) {
           const toolResults = r.steps.flatMap(
-            (s) => s.toolResults?.map((tr) => tr.result) || []
+            (s) => s.toolResults?.map((tr) => tr.output) || []
           )
           if (toolResults.length > 0) {
             results.push(toolResults[toolResults.length - 1])
@@ -136,7 +136,7 @@ Use the rewrite_text tool.`,
       })
 
       const toolResults = result.steps.flatMap(
-        (s) => s.toolResults?.map((tr) => tr.result) || []
+        (s) => s.toolResults?.map((tr) => tr.output) || []
       )
       return toolResults[0] || { original: text, rewritten: text }
     },
@@ -144,7 +144,7 @@ Use the rewrite_text tool.`,
 
   return new ToolLoopAgent({
     model: models.pro,
-    system: `You are the AI Manager for a ${context.store_type === "clothing" ? "fashion/streetwear" : "car care"} e-commerce store.
+    instructions: `You are the AI Manager for a ${context.store_type === "clothing" ? "fashion/streetwear" : "car care"} e-commerce store.
 
 CONTEXT:
 - Merchant ID: ${context.merchant_id}

@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
           s.toolCalls?.map((tc) => tc.toolName) || []
         ),
       },
-    })
+    } as any)
 
     return Response.json({
       success: true,

@@ -71,5 +71,5 @@ export default async function AdminInventoryPage({
     slug: p.slug,
   }))
 
-  return <InventoryPageClient initialProducts={products} />
+  return <InventoryPageClient initialProducts={products as any} />
 }

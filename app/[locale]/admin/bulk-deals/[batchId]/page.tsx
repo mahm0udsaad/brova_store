@@ -35,5 +35,5 @@ export default async function BatchDetailPage({ params }: BatchDetailPageProps) 
     .eq("batch_id", batchId)
     .order("created_at", { ascending: true })
 
-  return <BatchDetailClient batch={batch} initialImages={images || []} />
+  return <BatchDetailClient batch={batch as any} initialImages={(images || []) as any} />
 }

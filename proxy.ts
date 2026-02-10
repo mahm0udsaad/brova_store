@@ -32,6 +32,13 @@ function isAdminApiPath(pathname: string): boolean {
   return pathname.startsWith(ADMIN_API_PREFIX)
 }
 
+// AI/Voice API paths that also require authentication
+const PROTECTED_API_PREFIXES = ['/api/ai/', '/api/voice/']
+
+function isProtectedApiPath(pathname: string): boolean {
+  return PROTECTED_API_PREFIXES.some(p => pathname.startsWith(p))
+}
+
 function resolveTenantFromHost(host: string): string | null {
   const hostname = host.split(':')[0]
 
@@ -105,8 +112,8 @@ export default async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // --- Admin Route Protection ---
-  if (isAdminApiPath(pathname)) {
+  // --- API Route Protection ---
+  if (isAdminApiPath(pathname) || isProtectedApiPath(pathname)) {
     if (!user) {
       return NextResponse.json(
         { error: 'Authentication required' },

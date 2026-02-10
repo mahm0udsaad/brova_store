@@ -2,6 +2,7 @@ export const admin = {
   title: "Admin Panel",
   metadataTitle: "Admin Panel",
   metadataDescription: "Admin dashboard for managing products, orders, and inventory",
+  searchPlaceholder: "Ask AI or search...",
   dashboardLabel: "Dashboard",
   media: "Media",
   marketing: "Marketing",
@@ -51,9 +52,12 @@ export const admin = {
   navGroups: {
     main: "Main",
     content: "Content",
+    aiTools: "AI Tools",
     analytics: "Analytics",
     settings: "Settings",
   },
+  voiceAssistant: "Voice Assistant",
+  storeBuilder: "Store Builder",
   dashboard: {
     overview: "Overview",
     quickActions: "Quick Actions",

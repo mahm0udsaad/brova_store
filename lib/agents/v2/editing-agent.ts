@@ -14,7 +14,7 @@ import { rewriteText, updateDraft } from "./tools"
 export function createEditingAgent() {
   return new ToolLoopAgent({
     model: models.flash,
-    system: `You are an Editing Agent for an e-commerce platform.
+    instructions: `You are an Editing Agent for an e-commerce platform.
 
 Your job is to help refine product content through edits and rewrites.
 

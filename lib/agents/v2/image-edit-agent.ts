@@ -19,7 +19,7 @@ import {
 export function createImageEditAgent() {
   return new ToolLoopAgent({
     model: models.flash,
-    system: `You are an Image Editing Agent for an e-commerce platform.
+    instructions: `You are an Image Editing Agent for an e-commerce platform.
 
 Your job is to perform visual edits on product images based on user instructions.
 

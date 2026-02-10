@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getAdminStoreContext } from '@/lib/supabase/queries/admin-store'
 import { getThemeById } from '@/lib/themes'
+import type { ComponentNode, ComponentType } from '@/types/theme'
 
 export type UpdateStoreThemeResult =
   | { success: true; themeId: string }
@@ -78,13 +79,33 @@ export type HeroConfig = {
   cta_link?: string | null
 }
 
+export type LayoutConfig = {
+  products_per_row?: 3 | 4 | 5
+  show_categories?: boolean
+  show_featured?: boolean
+  show_new_arrivals?: boolean
+  header_style?: "transparent" | "solid" | "sticky"
+}
+
+export type FooterConfig = {
+  about_text?: string
+  about_text_ar?: string
+  social_links?: {
+    instagram?: string
+    facebook?: string
+    twitter?: string
+    whatsapp?: string
+    tiktok?: string
+  }
+}
+
 export type ThemeConfig = {
   branding?: BrandingConfig
   colors?: ColorConfig
   hero?: HeroConfig
-  layout?: Record<string, unknown>
+  layout?: LayoutConfig
   typography?: Record<string, unknown>
-  footer?: Record<string, unknown>
+  footer?: FooterConfig
 }
 
 type ActionResult =
@@ -265,4 +286,173 @@ export async function getBanners(): Promise<BannerInput & { id: string }[] | nul
     .order('sort_order', { ascending: true })
 
   return data as any
+}
+
+// =============================================================================
+// Component Tree Operations (store_components table)
+// =============================================================================
+
+export async function getComponentTree(storeId?: string): Promise<ComponentNode[]> {
+  const context = await getAdminStoreContext()
+  const resolvedStoreId = storeId || context?.store.id
+  if (!resolvedStoreId) return []
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('store_components')
+    .select('*')
+    .eq('store_id', resolvedStoreId)
+    .eq('status', 'active')
+    .order('position', { ascending: true })
+
+  if (error || !data) return []
+
+  return data.map((row) => ({
+    id: row.id,
+    type: row.component_type as ComponentType,
+    config: (row.config as Record<string, unknown>) ?? {},
+    children: [],
+    order: row.position,
+    visible: row.status === 'active',
+  }))
+}
+
+export async function saveComponentTree(
+  storeId: string,
+  nodes: ComponentNode[]
+): Promise<ActionResult> {
+  const supabase = await createClient()
+
+  // Delete existing components for this store
+  const { error: deleteError } = await supabase
+    .from('store_components')
+    .delete()
+    .eq('store_id', storeId)
+
+  if (deleteError) return { success: false, error: deleteError.message }
+
+  if (nodes.length === 0) return { success: true }
+
+  // Insert all nodes
+  const rows = nodes.map((node, i) => ({
+    store_id: storeId,
+    component_type: node.type,
+    config: node.config,
+    position: node.order ?? i,
+    status: node.visible !== false ? 'active' : 'inactive',
+  }))
+
+  const { error: insertError } = await supabase
+    .from('store_components')
+    .insert(rows as any)
+
+  if (insertError) return { success: false, error: insertError.message }
+  return { success: true }
+}
+
+export async function addThemeComponent(
+  storeId: string,
+  type: ComponentType,
+  config: Record<string, unknown> = {},
+  position?: number
+): Promise<ActionResult> {
+  const supabase = await createClient()
+
+  // Get max position if not specified
+  if (position === undefined) {
+    const { data } = await supabase
+      .from('store_components')
+      .select('position')
+      .eq('store_id', storeId)
+      .order('position', { ascending: false })
+      .limit(1)
+      .single()
+    position = (data?.position ?? -1) + 1
+  }
+
+  const { data, error } = await supabase
+    .from('store_components')
+    .insert({
+      store_id: storeId,
+      component_type: type,
+      config,
+      position,
+      status: 'active',
+    } as any)
+    .select('id')
+    .single()
+
+  if (error) return { success: false, error: error.message }
+  return { success: true, data }
+}
+
+export async function removeThemeComponent(
+  storeId: string,
+  componentId: string
+): Promise<ActionResult> {
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('store_components')
+    .delete()
+    .eq('id', componentId)
+    .eq('store_id', storeId)
+
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+export async function updateThemeComponent(
+  storeId: string,
+  componentId: string,
+  updates: { config?: Record<string, unknown>; visible?: boolean }
+): Promise<ActionResult> {
+  const supabase = await createClient()
+
+  const updateData: Record<string, unknown> = {}
+  if (updates.config !== undefined) updateData.config = updates.config
+  if (updates.visible !== undefined) updateData.status = updates.visible ? 'active' : 'inactive'
+  updateData.updated_at = new Date().toISOString()
+
+  const { error } = await supabase
+    .from('store_components')
+    .update(updateData)
+    .eq('id', componentId)
+    .eq('store_id', storeId)
+
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+export async function reorderThemeComponents(
+  storeId: string,
+  componentIds: string[]
+): Promise<ActionResult> {
+  const supabase = await createClient()
+
+  const results = await Promise.all(
+    componentIds.map((id, i) =>
+      supabase
+        .from('store_components')
+        .update({ position: i })
+        .eq('id', id)
+        .eq('store_id', storeId)
+    )
+  )
+
+  const failed = results.find((r) => r.error)
+  if (failed?.error) return { success: false, error: failed.error.message }
+  return { success: true }
+}
+
+export async function applyTemplate(
+  storeId: string,
+  templateId: string
+): Promise<ActionResult> {
+  // Dynamic import to avoid circular dependency
+  const { themeTemplates } = await import('@/lib/theme/templates')
+  const template = themeTemplates.find((t) => t.id === templateId)
+  if (!template) return { success: false, error: 'Template not found' }
+
+  return saveComponentTree(storeId, template.nodes)
 }

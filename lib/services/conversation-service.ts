@@ -133,7 +133,7 @@ export class ConversationService {
 
       return (data || []).map((msg: StoredMessage) => ({
         id: msg.id,
-        role: msg.role,
+        role: msg.role as "user" | "assistant",
         content: msg.content,
         timestamp: new Date(msg.created_at),
         images: msg.images,

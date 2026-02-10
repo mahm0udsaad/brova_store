@@ -4,7 +4,7 @@ import * as React from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { springConfigs } from "@/lib/ui/motion-presets"
-import { useAdminAssistant } from "./AdminAssistantProvider"
+import { useAdminAssistant, useAdminAssistantActivity } from "./AdminAssistantProvider"
 import { 
   Sparkles, 
   MessageSquare, 
@@ -26,7 +26,7 @@ export function AIStatusIndicator({
   className, 
   showLabel = true 
 }: AIStatusIndicatorProps) {
-  const { isLoading, isGenerating, currentActivity, currentAgent } = useAdminAssistant()
+  const { isLoading, isGenerating, currentActivity, currentAgent } = useAdminAssistantActivity()
   const locale = useLocale()
   const isRtl = locale === "ar"
   

@@ -20,7 +20,7 @@ export default async function AdminOrdersPage() {
   const context = await getAdminStoreContext()
   if (!context) {
     console.error('[AdminOrdersPage] No store context found')
-    return <OrdersPageClient initialOrders={[]} />
+    return <OrdersPageClient initialOrders={[] as any} />
   }
 
   // Fetch orders filtered by store_id (tenant-scoped)
@@ -40,5 +40,5 @@ export default async function AdminOrdersPage() {
     console.error("Error fetching orders:", error)
   }
 
-  return <OrdersPageClient initialOrders={orders || []} />
+  return <OrdersPageClient initialOrders={(orders || []) as any} />
 }

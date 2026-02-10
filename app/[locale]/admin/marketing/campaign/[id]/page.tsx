@@ -34,5 +34,5 @@ export default async function CampaignDetailPage({ params }: PageProps) {
     notFound()
   }
 
-  return <CampaignDetailClient drafts={drafts} campaignId={campaignId} locale={locale} />
+  return <CampaignDetailClient drafts={drafts as any} campaignId={campaignId} locale={locale} />
 }

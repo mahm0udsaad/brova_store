@@ -18,8 +18,8 @@ export function LivePreview({ previewToken }: LivePreviewProps) {
   const [refreshKey, setRefreshKey] = useState(0)
 
   const previewUrl = previewToken
-    ? `/${locale}?preview=${previewToken}`
-    : `/${locale}`
+    ? `/${locale}/preview?token=${previewToken}`
+    : `/${locale}/preview?template=general`
 
   const handleRefresh = () => {
     setRefreshKey((prev) => prev + 1)

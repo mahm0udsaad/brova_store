@@ -94,9 +94,9 @@ export default async function InsightsPage() {
         publishedProducts: publishedProducts || 0,
         totalUsers: totalUsers || 0,
       }}
-      recentOrders={hydratedRecentOrders}
-      topProducts={topProducts || []}
-      aiUsage={aiUsage || []}
+      recentOrders={hydratedRecentOrders as any}
+      topProducts={(topProducts || []) as any}
+      aiUsage={(aiUsage || []) as any}
     />
   )
 }

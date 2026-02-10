@@ -42,8 +42,8 @@ export async function generateStructured<T>(
   schema: ZodSchema<T>,
   options: Omit<GenerateOptions, "schema">
 ): Promise<T> {
-  const result = await generateObject({ ...options, schema, output: "object" })
-  return result.object
+  const result = await generateObject({ ...options, schema, output: "object" } as Parameters<typeof generateObject>[0])
+  return result.object as T
 }
 
 // Stream text with error handling

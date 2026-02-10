@@ -14,7 +14,7 @@ import { generateProductDetails, suggestCategories } from "./tools"
 export function createProductIntelAgent() {
   return new ToolLoopAgent({
     model: models.pro,
-    system: `You are a Product Intelligence Agent for an e-commerce platform.
+    instructions: `You are a Product Intelligence Agent for an e-commerce platform.
 
 Your job is to generate compelling, bilingual product details.
 

@@ -155,7 +155,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         status: 'paid',
         payment_intent_id: session.payment_intent as string,
         stripe_session_id: session.id,
-      })
+      } as any)
       .select()
       .single()
 
@@ -184,7 +184,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         type: 'sale',
         description: `Order ${order.id}`,
         reference_id: order.id,
-      })
+      } as any)
 
     // Create notification
     await supabase
@@ -195,7 +195,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
         title: 'New Order Received',
         message: `You received a new order for $${(totalAmount / 100).toFixed(2)}`,
         priority: 'medium',
-      })
+      } as any)
   }
 }
 
@@ -293,7 +293,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
         title: 'Subscription Canceled',
         message: 'Your subscription has been canceled. You will lose access to premium features.',
         priority: 'high',
-      })
+      } as any)
   }
 }
 
@@ -353,7 +353,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
         title: 'Payment Failed',
         message: 'Your subscription payment failed. Please update your payment method to continue service.',
         priority: 'high',
-      })
+      } as any)
   }
 }
 
@@ -390,8 +390,8 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
   // Deduct from wallet balance
   await supabase
     .rpc('increment_wallet_balance', {
-      p_store_id: order.store_id,
-      p_amount: -order.total_amount,
+      p_store_id: order.store_id!,
+      p_amount: -(order.total_amount ?? 0),
     })
 
   // Create wallet transaction
@@ -399,11 +399,11 @@ async function handleChargeRefunded(charge: Stripe.Charge) {
     .from('wallet_transactions')
     .insert({
       store_id: order.store_id,
-      amount: -order.total_amount,
+      amount: -(order.total_amount ?? 0),
       type: 'refund',
       description: `Refund for order ${order.id}`,
       reference_id: order.id,
-    })
+    } as any)
 }
 
 /**
@@ -433,12 +433,12 @@ async function handleDisputeCreated(dispute: Stripe.Dispute) {
   await supabase
     .from('notifications')
     .insert({
-      organization_id: order.stores.organization_id,
+      organization_id: (order.stores as any)?.organization_id,
       type: 'dispute',
       title: 'Payment Dispute',
       message: `A payment dispute has been filed for order ${order.id}. Reason: ${dispute.reason}`,
       priority: 'high',
-    })
+    } as any)
 }
 
 /**

@@ -28,5 +28,5 @@ export default async function AdminCategoriesPage({
     )
   }
 
-  return <CategoriesPageClient initialCategories={categories} />
+  return <CategoriesPageClient initialCategories={categories as any} />
 }

@@ -44,8 +44,9 @@ export const getPlanLimits = cache(async (storeId: string): Promise<PlanLimits |
 
     if (!store) return null
 
-    const subscriptionPlan = store.organizations?.subscription_plan
-    const subscriptionStatus = store.organizations?.subscription_status
+    const org = Array.isArray(store.organizations) ? store.organizations[0] : store.organizations
+    const subscriptionPlan = org?.subscription_plan
+    const subscriptionStatus = org?.subscription_status
 
     // Default limits (free/no subscription)
     let limits = {
@@ -59,9 +60,9 @@ export const getPlanLimits = cache(async (storeId: string): Promise<PlanLimits |
       const plan = await getPlanById(subscriptionPlan)
       if (plan) {
         limits = {
-          productLimit: plan.product_limit,
-          aiGenerationLimit: plan.ai_generation_limit,
-          transactionFee: plan.transaction_fee,
+          productLimit: plan.max_products ?? 10,
+          aiGenerationLimit: plan.max_ai_generations ?? 5,
+          transactionFee: parseFloat(plan.transaction_fee_percent) || 2.0,
         }
       }
     }

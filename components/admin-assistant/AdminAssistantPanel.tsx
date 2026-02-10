@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { motion } from "framer-motion"
 import { Send, Maximize2, Sparkles, Bot, Paperclip, X, Image as ImageIcon, MessageSquarePlus } from "lucide-react"
 import { useAdminAssistant } from "./AdminAssistantProvider"
@@ -24,6 +24,18 @@ export function AdminAssistantPanel() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const messagesRef = useRef(messages)
+  messagesRef.current = messages
+
+  // Stable retry handler — avoids creating new closures per message per render
+  const handleRetry = useCallback((messageIdx: number) => {
+    const currentMessages = messagesRef.current
+    const userMessages = currentMessages.slice(0, messageIdx).filter(m => m.role === "user")
+    const lastUserMessage = userMessages[userMessages.length - 1]
+    if (lastUserMessage) {
+      sendMessage(lastUserMessage.content, lastUserMessage.images)
+    }
+  }, [sendMessage])
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -190,17 +202,10 @@ export function AdminAssistantPanel() {
         )}
         
         {messages.map((message, idx) => (
-          <AdminAssistantMessage 
-            key={message.id} 
+          <AdminAssistantMessage
+            key={message.id}
             message={message}
-            onRetry={message.retryable ? () => {
-              // Find the previous user message and resend it
-              const userMessages = messages.slice(0, idx).filter(m => m.role === "user")
-              const lastUserMessage = userMessages[userMessages.length - 1]
-              if (lastUserMessage) {
-                sendMessage(lastUserMessage.content, lastUserMessage.images)
-              }
-            } : undefined}
+            onRetry={message.retryable ? () => handleRetry(idx) : undefined}
           />
         ))}
 
