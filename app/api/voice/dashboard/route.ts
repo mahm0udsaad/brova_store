@@ -98,7 +98,6 @@ export async function POST(req: NextRequest) {
       const manager = createManagerAgent(context)
       const result = await manager.generate({
         prompt: transcription,
-        messages: [],
       })
 
       aiResponse = result.text || (detectedLanguage === "ar"
