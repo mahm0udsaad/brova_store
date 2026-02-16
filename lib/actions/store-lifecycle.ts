@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { revalidatePath } from "next/cache"
 import crypto from "crypto"
 
@@ -44,7 +45,7 @@ async function getAuthenticatedStore() {
     .single()
   if (!store) return null
 
-  return { supabase, store, userId: user.id }
+  return { supabase, store, userId: user.id, organizationId: org.id }
 }
 
 // =============================================================================
@@ -177,4 +178,36 @@ export async function validatePreviewToken(token: string): Promise<{ valid: bool
   }
 
   return { valid: true, storeId: data.store_id }
+}
+
+// =============================================================================
+// Delete Store (Restart Onboarding)
+// =============================================================================
+
+export async function deleteStoreAndRestartOnboarding(): Promise<{ success: true } | { success: false; error: string }> {
+  const ctx = await getAuthenticatedStore()
+  if (!ctx) return { success: false, error: "Unauthorized" }
+
+  // Use admin client to bypass RLS for the delete itself, but only after
+  // ownership was verified through getAuthenticatedStore().
+  const admin = createAdminClient()
+  const { data: deleted, error: deleteStoreError } = await admin
+    .from("stores")
+    .delete()
+    .eq("id", ctx.store.id)
+    .select("id")
+    .maybeSingle()
+
+  if (deleteStoreError) {
+    return { success: false, error: deleteStoreError.message }
+  }
+  if (!deleted?.id) {
+    return { success: false, error: "Store deletion did not affect any rows" }
+  }
+
+  revalidatePath("/")
+  revalidatePath("/start")
+  revalidatePath("/admin")
+
+  return { success: true }
 }

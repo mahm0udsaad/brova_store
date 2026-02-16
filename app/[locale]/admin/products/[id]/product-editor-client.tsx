@@ -77,6 +77,11 @@ export default function ProductEditorClient({
   const aiAction = useAIProductAction(product?.id || '')
 
   const handleSave = async () => {
+    if (!form.values.name.trim()) {
+      form.setError(t("editor.nameRequired"))
+      triggerHaptic("error")
+      return
+    }
     try {
       const result = await form.save()
       triggerHaptic("success")
@@ -89,8 +94,12 @@ export default function ProductEditorClient({
   }
 
   const handlePublish = async () => {
-    await form.publish()
-    triggerHaptic("success")
+    try {
+      await form.publish()
+      triggerHaptic("success")
+    } catch {
+      triggerHaptic("error")
+    }
   }
 
   const handleUnpublish = async () => {
@@ -165,7 +174,7 @@ export default function ProductEditorClient({
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link href={buildHref("/admin/products")}>
-              <Button variant="ghost" size="icon-sm">
+              <Button variant="ghost" size="icon-sm" aria-label={t("editor.backToProducts")}>
                 <ArrowLeft className="w-4 h-4" />
               </Button>
             </Link>
@@ -253,16 +262,18 @@ export default function ProductEditorClient({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">{t("editor.nameEn")}</label>
+              <label htmlFor="product-name-en" className="text-sm font-medium">{t("editor.nameEn")}</label>
               <Input
+                id="product-name-en"
                 value={form.values.name}
                 onChange={(e) => form.updateField('name', e.target.value)}
                 placeholder={t("editor.nameEnPlaceholder")}
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">{t("editor.nameAr")}</label>
+              <label htmlFor="product-name-ar" className="text-sm font-medium">{t("editor.nameAr")}</label>
               <Input
+                id="product-name-ar"
                 value={form.values.name_ar}
                 onChange={(e) => form.updateField('name_ar', e.target.value)}
                 placeholder={t("editor.nameArPlaceholder")}
@@ -302,13 +313,17 @@ export default function ProductEditorClient({
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">{t("editor.price")}</label>
+              <label htmlFor="product-price" className="text-sm font-medium">{t("editor.price")}</label>
               <div className="relative">
                 <Input
+                  id="product-price"
                   type="number"
                   min="0"
                   value={form.values.price || ''}
-                  onChange={(e) => form.updateField('price', Number(e.target.value))}
+                  onChange={(e) => {
+                    const next = e.target.value
+                    form.updateField('price', next === '' ? 0 : Math.max(0, Number(next) || 0))
+                  }}
                   placeholder="0"
                   className="pr-12"
                 />
@@ -316,18 +331,23 @@ export default function ProductEditorClient({
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">{t("editor.inventory")}</label>
+              <label htmlFor="product-inventory" className="text-sm font-medium">{t("editor.inventory")}</label>
               <Input
+                id="product-inventory"
                 type="number"
                 min="0"
                 value={form.values.inventory || ''}
-                onChange={(e) => form.updateField('inventory', Number(e.target.value))}
+                onChange={(e) => {
+                  const next = e.target.value
+                  form.updateField('inventory', next === '' ? 0 : Math.max(0, Number(next) || 0))
+                }}
                 placeholder="0"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">{t("editor.sku")}</label>
+              <label htmlFor="product-sku" className="text-sm font-medium">{t("editor.sku")}</label>
               <Input
+                id="product-sku"
                 value={form.values.sku}
                 onChange={(e) => form.updateField('sku', e.target.value)}
                 placeholder="SKU-001"

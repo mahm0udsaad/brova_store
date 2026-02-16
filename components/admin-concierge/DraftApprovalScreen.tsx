@@ -29,48 +29,49 @@ import type { DraftProduct } from "@/lib/ai/concierge-context"
 
 interface DraftApprovalScreenProps {
   onBack?: () => void
+  onComplete?: () => void
 }
 
-export function DraftApprovalScreen({ onBack }: DraftApprovalScreenProps) {
+export function DraftApprovalScreen({ onBack, onComplete }: DraftApprovalScreenProps) {
   const locale = useLocale()
   const t = useTranslations("concierge")
   const router = useRouter()
   const isRtl = locale === "ar"
   
-  const { draftState, approveDraft, completeOnboarding } = useConcierge()
-  
+  const { draftState, publishStore } = useConcierge()
+
   const [isApproving, setIsApproving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showAllProducts, setShowAllProducts] = useState(false)
-  
+
   // Prepare summary data
   const hasStoreName = Boolean(draftState.store_name?.value)
   const hasProducts = draftState.products.length > 0
   const hasAppearance = Boolean(draftState.appearance)
-  
+
   const hasAnything = hasStoreName || hasProducts || hasAppearance
-  
-  // Handle approval
+
+  // Handle approval — publishes the store and redirects
   const handleApprove = async () => {
     if (!hasAnything) {
       setError(isRtl ? "لا يوجد شيء للحفظ" : "Nothing to save")
       return
     }
-    
+
     setIsApproving(true)
     setError(null)
-    
+
     try {
-      const success = await approveDraft()
-      
+      const success = await publishStore()
+
       if (success) {
-        // Mark onboarding as completed
-        await completeOnboarding()
-        
-        // Redirect to admin dashboard (deferred to avoid render phase update)
-        setTimeout(() => {
-          router.push(`/${locale}/admin`)
-        }, 0)
+        if (onComplete) {
+          onComplete()
+        } else {
+          setTimeout(() => {
+            router.push(`/${locale}/admin`)
+          }, 0)
+        }
       } else {
         setError(t("approval.error"))
       }

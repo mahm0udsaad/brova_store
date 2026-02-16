@@ -48,6 +48,18 @@ export interface ProductFormData {
   variants?: Record<string, unknown>[]
 }
 
+function asNonNegativeNumber(value: unknown): number | null {
+  const num = typeof value === "number" ? value : Number(value)
+  if (!Number.isFinite(num) || num < 0) return null
+  return num
+}
+
+function asStringOrNull(value: unknown): string | null {
+  if (typeof value !== "string") return null
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : null
+}
+
 /**
  * Cursor-paginated product list with search and filters.
  */
@@ -194,11 +206,59 @@ export async function upsertProduct(
   const context = await getAdminStoreContext()
   if (!context) return { product: null, error: 'No store context' }
 
+  const normalizedName = asStringOrNull(data.name)
+  const normalizedPrice = asNonNegativeNumber(data.price)
+  const normalizedInventory = data.inventory === undefined
+    ? 0
+    : asNonNegativeNumber(data.inventory)
+
+  if (!productId) {
+    if (!normalizedName) {
+      return { product: null, error: "Product name is required" }
+    }
+    if (normalizedPrice === null) {
+      return { product: null, error: "Price must be a non-negative number" }
+    }
+    if (normalizedInventory === null) {
+      return { product: null, error: "Inventory must be a non-negative number" }
+    }
+  }
+
+  const normalizedTags = Array.isArray(data.tags)
+    ? data.tags
+        .filter((tag): tag is string => typeof tag === "string")
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+    : undefined
+
+  const normalizedImages = Array.isArray(data.images)
+    ? data.images.filter((url): url is string => typeof url === "string" && url.trim().length > 0)
+    : undefined
+
+  const normalizedData: ProductFormData = {
+    ...data,
+    name: normalizedName ?? data.name,
+    name_ar: asStringOrNull(data.name_ar) ?? null,
+    description: asStringOrNull(data.description) ?? null,
+    description_ar: asStringOrNull(data.description_ar) ?? null,
+    category: asStringOrNull(data.category) ?? null,
+    category_ar: asStringOrNull(data.category_ar) ?? null,
+    sku: asStringOrNull(data.sku) ?? null,
+    price: normalizedPrice ?? data.price,
+    inventory: normalizedInventory ?? data.inventory ?? 0,
+    stock_quantity: data.stock_quantity ?? normalizedInventory ?? 0,
+    image_url:
+      asStringOrNull(data.image_url) ??
+      (normalizedImages && normalizedImages.length > 0 ? normalizedImages[0] : null),
+    images: normalizedImages,
+    tags: normalizedTags,
+  }
+
   if (productId) {
     // Update existing
     const { data: product, error } = await supabase
       .from('store_products')
-      .update(data)
+      .update(normalizedData)
       .eq('id', productId)
       .eq('store_id', context.store.id)
       .select()
@@ -209,7 +269,8 @@ export async function upsertProduct(
   }
 
   // Create new - generate slug
-  const slug = `${data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}-${Date.now()}`
+  const slugSource = normalizedName ?? "product"
+  const slug = `${slugSource.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}-${Date.now()}`
 
   const { data: product, error } = await supabase
     .from('store_products')
@@ -217,9 +278,10 @@ export async function upsertProduct(
       ...data,
       store_id: context.store.id,
       slug,
-      status: data.status || 'draft',
-      inventory: data.inventory ?? 0,
-      stock_quantity: data.stock_quantity ?? 0,
+      ...normalizedData,
+      status: normalizedData.status || 'draft',
+      inventory: normalizedInventory ?? 0,
+      stock_quantity: normalizedData.stock_quantity ?? normalizedInventory ?? 0,
     })
     .select()
     .single()

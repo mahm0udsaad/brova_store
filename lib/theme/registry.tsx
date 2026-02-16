@@ -14,6 +14,10 @@ import { CartDrawer } from "@/components/storefront/theme/cart-drawer"
 import { CheckoutFlow } from "@/components/storefront/theme/checkout-flow"
 import { StoreFooter } from "@/components/storefront/theme/store-footer"
 import { AIShoppingAssistant } from "@/components/storefront/theme/ai-shopping-assistant"
+import { WhatsAppButton } from "@/components/storefront/theme/whatsapp-button"
+import { TrustBadges } from "@/components/storefront/theme/trust-badges"
+import { DeliveryInfo } from "@/components/storefront/theme/delivery-info"
+import { OccasionBanner } from "@/components/storefront/theme/occasion-banner"
 
 export const themeComponentRegistry: ComponentRegistry = {
   StoreHeader,
@@ -31,4 +35,8 @@ export const themeComponentRegistry: ComponentRegistry = {
   CheckoutFlow,
   StoreFooter,
   AIShoppingAssistant,
+  WhatsAppButton,
+  TrustBadges,
+  DeliveryInfo,
+  OccasionBanner,
 }

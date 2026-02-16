@@ -88,10 +88,13 @@ const getAdminStoreContextByUserId = cache(async (userId: string): Promise<Admin
   // Get user's organization and store via RPC
   const { data: orgData, error: orgError } = await supabase
     .rpc('get_user_organization')
-    .single<UserOrganizationData>()
+    .maybeSingle<UserOrganizationData>()
 
-  if (orgError || !orgData || !orgData.store_id) {
+  if (orgError) {
     console.error('[getAdminStoreContext] Failed to get organization:', orgError)
+    return null
+  }
+  if (!orgData || !orgData.store_id) {
     return null
   }
 

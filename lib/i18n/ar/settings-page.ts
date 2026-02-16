@@ -14,4 +14,5 @@ export const settingsPage = {
   shippingPayment: "الشحن والدفع",
   shippingPaymentValue: "الدفع عند الاستلام (1-3 أيام عمل) - سعر ثابت: 20 ج.م",
   contactTitle: "تواصل معنا",
+  contactPhoneNumber: "+20 123 456 7890",
 }

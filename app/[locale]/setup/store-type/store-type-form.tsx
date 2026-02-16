@@ -42,7 +42,12 @@ const CarIcon = () => (
   </svg>
 )
 
-export default function StoreTypeForm({ locale }: { locale: string }) {
+interface StoreTypeFormProps {
+  locale: string
+  onComplete?: (storeType: StoreType) => void
+}
+
+export default function StoreTypeForm({ locale, onComplete }: StoreTypeFormProps) {
   const t = useTranslations('setup.storeType')
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -59,7 +64,11 @@ export default function StoreTypeForm({ locale }: { locale: string }) {
         setError(t('error'))
         return
       }
-      router.push(`/${locale}/start`)
+      if (onComplete) {
+        onComplete(selected)
+      } else {
+        router.push(`/${locale}/start`)
+      }
     })
   }
 

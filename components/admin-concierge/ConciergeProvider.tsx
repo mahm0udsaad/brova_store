@@ -9,76 +9,41 @@ import {
   useMemo,
   type ReactNode,
 } from "react"
-import { usePathname, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useLocale } from "next-intl"
+import { createClient } from "@/lib/supabase/client"
 import {
-  type ConciergeContext,
   type DraftStoreState,
   type OnboardingStatus,
   type OnboardingStep,
   type StoreState,
-  type UserSignal,
-  type VisibleComponent,
-  createInitialContext,
   createEmptyDraftState,
-  mergeDraftUpdates,
-  addUserSignal,
-  setVisibleComponents,
 } from "@/lib/ai/concierge-context"
 import {
   updateOnboardingStatus as persistOnboardingStatus,
 } from "@/lib/actions/setup"
-// AI provider moved to ConciergeGate to avoid setState-during-render warning
-// Removed: import { useAgentStream } from "@/hooks/use-agent-stream"
-// Removed: import { useWorkflowState } from "./hooks/useWorkflowState"
-// Removed: import { useToolHandlers } from "./hooks/useToolHandlers"
-// Removed: import { getTotalWorkflowStages } from "@/lib/agents/v2/workflow-stages"
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
 interface ConciergeState {
-  // Onboarding state
   isOnboardingActive: boolean
   onboardingStatus: OnboardingStatus
   currentStep: OnboardingStep
-  
-  // Draft state (ephemeral, never persisted without approval)
   draftState: DraftStoreState
-  
-  // UI Context
-  context: ConciergeContext
-  
-  // Store state
   storeState: StoreState
+  storeId: string | null
 }
 
 interface ConciergeActions {
-  // Onboarding control
   startOnboarding: () => void
   skipOnboarding: () => void
   completeOnboarding: () => void
   setCurrentStep: (step: OnboardingStep) => void
-
-  // Removed: Conversation actions (now handled by AI.Provider)
-  // sendMessage: (content: string, selectedOptionId?: string) => Promise<void>
-  // skipQuestion: () => void
-  // clearMessages: () => void
-
-  // Image upload and workflow
-  handleImageUpload: (urls: string[], batchId: string) => Promise<void>
-
-  // Draft updates (preview only, no persistence)
   updateDraft: (updates: Partial<DraftStoreState>) => void
   clearDraft: () => void
-
-  // Context updates
-  registerSignal: (signal: UserSignal) => void
-  updateVisibleComponents: (components: VisibleComponent[]) => void
-
-  // Final actions (require explicit user approval)
-  approveDraft: () => Promise<boolean>
+  refreshPreview: () => Promise<void>
   publishStore: () => Promise<boolean>
 }
 
@@ -88,26 +53,15 @@ interface ConciergeContextType extends ConciergeState, ConciergeActions {}
 // CONTEXT
 // =============================================================================
 
-const ConciergeContext = createContext<ConciergeContextType | null>(null)
+const ConciergeCtx = createContext<ConciergeContextType | null>(null)
 
 export function useConcierge() {
-  const context = useContext(ConciergeContext)
+  const context = useContext(ConciergeCtx)
   if (!context) {
     throw new Error("useConcierge must be used within ConciergeProvider")
   }
   return context
 }
-
-// =============================================================================
-// STORAGE KEYS (for session storage only - ephemeral)
-// =============================================================================
-
-const STORAGE_KEYS = {
-  DRAFT_STATE: "concierge-draft-state",
-  ONBOARDING_STATUS: "concierge-onboarding-status",
-  CURRENT_STEP: "concierge-current-step",
-  // Removed: MESSAGES: "concierge-messages",
-} as const
 
 // =============================================================================
 // PROVIDER
@@ -117,369 +71,290 @@ interface ConciergeProviderProps {
   children: ReactNode
   initialStoreState?: StoreState
   initialOnboardingStatus?: OnboardingStatus
+  storeId?: string | null
 }
 
 export function ConciergeProvider({
   children,
   initialStoreState = "empty",
   initialOnboardingStatus = "not_started",
+  storeId: initialStoreId = null,
 }: ConciergeProviderProps) {
-  const pathname = usePathname()
   const router = useRouter()
   const locale = useLocale() as "ar" | "en"
-  
+
   // ==========================================================================
   // STATE
   // ==========================================================================
-  
+
   const [isOnboardingActive, setIsOnboardingActive] = useState(false)
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus>(initialOnboardingStatus)
   const [currentStep, setCurrentStepState] = useState<OnboardingStep>("welcome")
-  // Removed: const [messages, setMessages] = useState<ConciergeMessage[]>([])
-  // Removed: const [isThinking, setIsThinking] = useState(false)
   const [draftState, setDraftState] = useState<DraftStoreState>(createEmptyDraftState())
   const [storeState, setStoreState] = useState<StoreState>(initialStoreState)
-  
-  // Context derived from current state
-  const context = useMemo(() => {
-    const baseContext = createInitialContext(
-      getPageNameFromPath(pathname),
-      pathname,
-      locale,
-      storeState,
-      onboardingStatus
-    )
-
-    // Add workflow type for specialized AI behavior during onboarding
-    return {
-      ...baseContext,
-      workflow_type: onboardingStatus === 'in_progress' ? 'onboarding' as const : undefined,
-    }
-  }, [pathname, locale, storeState, onboardingStatus])
-  
-  const [currentContext, setCurrentContext] = useState<ConciergeContext>(context)
-
-  // Removed: Initialize workflow and draft state
-  // Removed: const workflowState = useWorkflowState(null)
-  // Removed: const draftStateHook = useDraftState()
-  // Removed: Initialize agent stream with Manager Agent
-  // Removed: const agentStream = useAgentStream({...})
+  const [storeId] = useState<string | null>(initialStoreId)
 
   // ==========================================================================
-  // HYDRATION FROM SESSION STORAGE (ephemeral only)
+  // REFRESH PREVIEW FROM DB
   // ==========================================================================
-  
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    
+
+  const refreshPreview = useCallback(async () => {
+    if (!storeId) return
+
     try {
-      // Restore draft state from session storage (not localStorage - ephemeral!)
-      const storedDraft = sessionStorage.getItem(STORAGE_KEYS.DRAFT_STATE)
-      if (storedDraft) {
-        const parsed = JSON.parse(storedDraft)
-        setDraftState(parsed)
-      }
-      
-      // Removed: Restore messages
-      // const storedMessages = sessionStorage.getItem(STORAGE_KEYS.MESSAGES)
-      // if (storedMessages) {
-      //   setMessages(JSON.parse(storedMessages))
-      // }
-      
-      // Restore onboarding status — only restore 'in_progress', never override
-      // server-provided status with stale 'skipped'/'completed' from sessionStorage
-      const storedStatus = sessionStorage.getItem(STORAGE_KEYS.ONBOARDING_STATUS)
-      if (storedStatus === 'in_progress') {
-        setOnboardingStatus(storedStatus as OnboardingStatus)
-      }
-      
-      // Restore current step
-      const storedStep = sessionStorage.getItem(STORAGE_KEYS.CURRENT_STEP)
-      if (storedStep) {
-        setCurrentStepState(storedStep as OnboardingStep)
-      }
+      const supabase = createClient()
+
+      const [storeResult, productsResult, settingsResult, componentsResult, bannersResult] = await Promise.all([
+        supabase
+          .from("stores")
+          .select("name, store_type")
+          .eq("id", storeId)
+          .single(),
+        supabase
+          .from("store_products")
+          .select("id, name, name_ar, price, image_url")
+          .eq("store_id", storeId)
+          .order("created_at", { ascending: false })
+          .limit(8),
+        supabase
+          .from("store_settings")
+          .select("appearance, theme_config")
+          .eq("store_id", storeId)
+          .single(),
+        supabase
+          .from("store_components")
+          .select("id, component_type, config, position, status")
+          .eq("store_id", storeId)
+          .eq("status", "active")
+          .order("position", { ascending: true }),
+        supabase
+          .from("store_banners")
+          .select("id, image_url, title, title_ar, subtitle, subtitle_ar, position")
+          .eq("store_id", storeId)
+          .eq("is_active", true)
+          .order("sort_order", { ascending: true }),
+      ])
+
+      // Store name
+      const storeName = storeResult.data?.name
+        ? {
+            value: storeResult.data.name,
+            confidence: "user_provided" as const,
+            source: "ai" as const,
+          }
+        : undefined
+
+      // Store type
+      const storeType = storeResult.data?.store_type || undefined
+
+      // Appearance
+      const rawAppearance = (settingsResult.data?.appearance || {}) as Record<string, any>
+      const rawThemeConfig = (settingsResult.data?.theme_config || {}) as Record<string, any>
+      const logoUrl = rawAppearance.logo_url || undefined
+      const appearance =
+        rawAppearance.primary_color || rawAppearance.accent_color || logoUrl
+          ? {
+              primary_color: rawAppearance.primary_color || rawThemeConfig?.colors?.primary,
+              accent_color: rawAppearance.accent_color || rawThemeConfig?.colors?.accent,
+              font_family: rawAppearance.font_family,
+              logo_preview_url: logoUrl,
+            }
+          : rawThemeConfig?.colors
+            ? {
+                primary_color: rawThemeConfig.colors.primary,
+                accent_color: rawThemeConfig.colors.accent,
+                font_family: rawThemeConfig.typography?.fontBody,
+                logo_preview_url: logoUrl,
+              }
+            : logoUrl
+              ? { logo_preview_url: logoUrl }
+              : undefined
+
+      // Products (replace, not append)
+      const products = (productsResult.data || []).map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        name_ar: p.name_ar,
+        price: p.price,
+        image_url: p.image_url,
+        confidence: "ai_generated" as const,
+      }))
+
+      // Page sections
+      const pageSections = (componentsResult.data || []).map((c: any) => ({
+        id: c.id,
+        type: c.component_type,
+        config: (c.config || {}) as Record<string, unknown>,
+        position: c.position,
+      }))
+
+      // Banners
+      const banners = (bannersResult.data || []).map((b: any) => ({
+        id: b.id,
+        image_url: b.image_url,
+        title: b.title,
+        title_ar: b.title_ar,
+        subtitle: b.subtitle,
+        subtitle_ar: b.subtitle_ar,
+        position: b.position,
+      }))
+
+      setDraftState({
+        store_name: storeName,
+        store_type: storeType,
+        products,
+        appearance,
+        page_sections: pageSections,
+        banners,
+        last_updated: new Date().toISOString(),
+        is_dirty: false,
+      })
     } catch (error) {
-      console.error("Failed to hydrate concierge state:", error)
+      console.error("[ConciergeProvider] Failed to refresh preview:", error)
     }
-  }, [])
-  
-  // Persist draft state to session storage
+  }, [storeId])
+
+  // Initial preview load
   useEffect(() => {
-    if (typeof window === "undefined") return
-    if (draftState.is_dirty) {
-      sessionStorage.setItem(STORAGE_KEYS.DRAFT_STATE, JSON.stringify(draftState))
+    if (storeId) {
+      refreshPreview()
     }
-  }, [draftState])
-  
-  // Removed: Persist messages to session storage
-  // useEffect(() => {
-  //   if (typeof window === "undefined") return
-  //   if (messages.length > 0) {
-  //     sessionStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(messages))
-  //   }
-  // }, [messages])
-  
+  }, [storeId, refreshPreview])
+
   // ==========================================================================
   // ONBOARDING ACTIONS
   // ==========================================================================
-  
-  const startOnboarding = useCallback(async () => {
+
+  const startOnboarding = useCallback(() => {
     setIsOnboardingActive(true)
     setOnboardingStatus("in_progress")
     setCurrentStepState("welcome")
-    sessionStorage.setItem(STORAGE_KEYS.ONBOARDING_STATUS, "in_progress")
-    
-    // Persist to database (non-blocking)
+
     persistOnboardingStatus("in_progress").catch((error) => {
       console.error("Failed to persist in_progress status:", error)
     })
-    
-    // Removed: Add initial welcome message (now streamed by AI)
-    // const welcomeMessage: ConciergeMessage = {...}
-    // setMessages([welcomeMessage])
-  }, [locale])
-  
+  }, [])
+
   const skipOnboarding = useCallback(async () => {
     setIsOnboardingActive(false)
     setOnboardingStatus("skipped")
-    sessionStorage.setItem(STORAGE_KEYS.ONBOARDING_STATUS, "skipped")
-    // Clear draft state when skipping
-    setDraftState(createEmptyDraftState())
-    sessionStorage.removeItem(STORAGE_KEYS.DRAFT_STATE)
-    
-    // Persist to database
+
     try {
       await persistOnboardingStatus("skipped")
     } catch (error) {
       console.error("Failed to persist skipped status:", error)
     }
-    
-    // Redirect to admin dashboard (deferred to avoid render phase update)
+
     setTimeout(() => {
       router.push(`/${locale}/admin`)
     }, 0)
   }, [locale, router])
-  
+
   const completeOnboarding = useCallback(async () => {
     setIsOnboardingActive(false)
     setOnboardingStatus("completed")
-    sessionStorage.setItem(STORAGE_KEYS.ONBOARDING_STATUS, "completed")
-    
-    // Persist to database
+
     try {
       await persistOnboardingStatus("completed")
     } catch (error) {
       console.error("Failed to persist completed status:", error)
     }
   }, [])
-  
+
   const setCurrentStep = useCallback((step: OnboardingStep) => {
     setCurrentStepState(step)
-    sessionStorage.setItem(STORAGE_KEYS.CURRENT_STEP, step)
   }, [])
-  
-  // ==========================================================================
-  // CONVERSATION ACTIONS (Now handled by AI.Provider)
-  // ==========================================================================
-  
-  // Removed: sendMessage
-  // Removed: skipQuestion
-  
-  const handleImageUpload = useCallback(
-    async (urls: string[], batchId: string) => {
-      try {
-        // Update context with uploaded images so AI conversation can access them
-        setCurrentContext((prev) => ({
-          ...prev,
-          uploaded_images: urls,
-          batch_id: batchId,
-          workflow_type: 'bulk_upload' as const,
-        }))
 
-        console.log('[ConciergeProvider] Images uploaded and added to context', { urls, batchId })
-
-        // Note: The actual AI processing will be triggered by ConciergeConversation
-        // component which has access to the AI server actions via useActions hook
-      } catch (error) {
-        console.error('[ConciergeProvider] Image upload failed:', error)
-      }
-    },
-    []
-  )
-
-  // Removed: clearMessages
-  // const clearMessages = useCallback(() => { ... }, [])
-  
   // ==========================================================================
-  // DRAFT ACTIONS (Preview only, never persisted without approval)
+  // DRAFT ACTIONS
   // ==========================================================================
-  
+
   const updateDraft = useCallback((updates: Partial<DraftStoreState>) => {
-    setDraftState(prev => mergeDraftUpdates(prev, updates))
+    setDraftState((prev) => ({
+      ...prev,
+      ...updates,
+      products: updates.products
+        ? [...prev.products, ...updates.products]
+        : prev.products,
+      last_updated: new Date().toISOString(),
+      is_dirty: true,
+    }))
   }, [])
-  
+
   const clearDraft = useCallback(() => {
     setDraftState(createEmptyDraftState())
-    sessionStorage.removeItem(STORAGE_KEYS.DRAFT_STATE)
   }, [])
-  
+
   // ==========================================================================
-  // CONTEXT ACTIONS
+  // PUBLISH STORE
   // ==========================================================================
-  
-  const registerSignal = useCallback((signal: UserSignal) => {
-    setCurrentContext(prev => addUserSignal(prev, signal))
-  }, [])
-  
-  const updateVisibleComponents = useCallback((components: VisibleComponent[]) => {
-    setCurrentContext(prev => setVisibleComponents(prev, components))
-  }, [])
-  
-  // ==========================================================================
-  // FINAL ACTIONS (Require explicit user approval)
-  // ==========================================================================
-  
-  /**
-   * Save draft to database - ONLY when user explicitly approves
-   */
-  const approveDraft = useCallback(async (): Promise<boolean> => {
-    // This is the ONLY place where we write to the database
-    // And only after explicit user approval
-    try {
-      const response = await fetch("/api/admin/concierge/approve-draft", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          draftState,
-          // Send context to verify this is a legitimate save
-          context: currentContext,
-        }),
-      })
-      
-      if (!response.ok) {
-        throw new Error("Failed to save draft")
-      }
-      
-      // Clear draft after successful save
-      clearDraft()
-      return true
-    } catch (error) {
-      console.error("Failed to approve draft:", error)
-      return false
-    }
-  }, [draftState, currentContext, clearDraft])
-  
-  /**
-   * Publish store - ONLY when user explicitly confirms
-   */
+
   const publishStore = useCallback(async (): Promise<boolean> => {
-    // This requires double confirmation in the UI
+    if (!storeId) return false
+
     try {
-      const response = await fetch("/api/admin/concierge/publish", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          draftState,
-          context: currentContext,
-        }),
-      })
-      
-      if (!response.ok) {
-        throw new Error("Failed to publish")
-      }
-      
-      completeOnboarding()
+      const supabase = createClient()
+      const { error } = await supabase
+        .from("stores")
+        .update({
+          status: "active",
+          onboarding_completed: "completed",
+          published_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", storeId)
+
+      if (error) throw error
+
+      await completeOnboarding()
       setStoreState("active")
-      clearDraft()
       return true
     } catch (error) {
       console.error("Failed to publish store:", error)
       return false
     }
-  }, [draftState, currentContext, completeOnboarding, clearDraft])
-  
+  }, [storeId, completeOnboarding])
+
   // ==========================================================================
   // CONTEXT VALUE
   // ==========================================================================
-  
-  const value = useMemo<ConciergeContextType>(() => ({
-    // State
-    isOnboardingActive,
-    onboardingStatus,
-    currentStep,
-    // Removed: messages,
-    // Removed: isThinking,
-    draftState,
-    context: currentContext,
-    storeState,
 
-    // Actions
-    startOnboarding,
-    skipOnboarding,
-    completeOnboarding,
-    setCurrentStep,
-    // Removed: sendMessage,
-    // Removed: skipQuestion,
-    // Removed: clearMessages,
-    handleImageUpload,
-    updateDraft,
-    clearDraft,
-    registerSignal,
-    updateVisibleComponents,
-    approveDraft,
-    publishStore,
-  }), [
-    isOnboardingActive,
-    onboardingStatus,
-    currentStep,
-    // Removed: messages,
-    // Removed: isThinking,
-    draftState,
-    currentContext,
-    storeState,
-    startOnboarding,
-    skipOnboarding,
-    completeOnboarding,
-    setCurrentStep,
-    // Removed: sendMessage,
-    // Removed: skipQuestion,
-    // Removed: clearMessages,
-    handleImageUpload,
-    updateDraft,
-    clearDraft,
-    registerSignal,
-    updateVisibleComponents,
-    approveDraft,
-    publishStore,
-  ])
-  
-  return (
-    <ConciergeContext.Provider value={value}>
-      {children}
-    </ConciergeContext.Provider>
+  const value = useMemo<ConciergeContextType>(
+    () => ({
+      isOnboardingActive,
+      onboardingStatus,
+      currentStep,
+      draftState,
+      storeState,
+      storeId,
+      startOnboarding,
+      skipOnboarding,
+      completeOnboarding,
+      setCurrentStep,
+      updateDraft,
+      clearDraft,
+      refreshPreview,
+      publishStore,
+    }),
+    [
+      isOnboardingActive,
+      onboardingStatus,
+      currentStep,
+      draftState,
+      storeState,
+      storeId,
+      startOnboarding,
+      skipOnboarding,
+      completeOnboarding,
+      setCurrentStep,
+      updateDraft,
+      clearDraft,
+      refreshPreview,
+      publishStore,
+    ]
   )
-}
 
-// =============================================================================
-// HELPERS
-// =============================================================================
-
-function getPageNameFromPath(pathname: string): string {
-  // Remove locale prefix
-  const path = pathname.replace(/^\/(ar|en)/, "")
-  
-  if (path === "" || path === "/") return "Home"
-  if (path.startsWith("/admin/onboarding")) return "OnboardingFlow"
-  if (path.startsWith("/admin/inventory")) return "ProductsInventory"
-  if (path.startsWith("/admin/products")) return "ProductEditor"
-  if (path.startsWith("/admin/orders")) return "OrdersManagement"
-  if (path.startsWith("/admin/media")) return "MediaLibrary"
-  if (path.startsWith("/admin/settings")) return "StoreSettings"
-  if (path.startsWith("/admin/appearance")) return "StoreAppearance"
-  if (path.startsWith("/admin/insights")) return "StoreInsights"
-  if (path.startsWith("/admin")) return "AdminDashboard"
-  
-  return "UnknownPage"
+  return (
+    <ConciergeCtx.Provider value={value}>{children}</ConciergeCtx.Provider>
+  )
 }

@@ -1,231 +1,518 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useRouter } from "next/navigation"
 import { useLocale, useTranslations } from "next-intl"
+import { useChat } from "@ai-sdk/react"
+import { DefaultChatTransport } from "ai"
 import {
   Send,
-  SkipForward,
   Sparkles,
   Loader2,
-  Check,
+  ImagePlus,
+  X,
+  ExternalLink,
+  LayoutDashboard,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { springConfigs } from "@/lib/ui/motion-presets"
-import { ImageUploadZone } from "./ImageUploadZone"
-import { useUIState, useActions } from '@ai-sdk/rsc';
-import type { AI } from '@/app/actions';
-import { useConcierge } from "./ConciergeProvider";
+import { createClient } from "@/lib/supabase/client"
+import { useConcierge } from "./ConciergeProvider"
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
 interface ConciergeConversationProps {
-  onRequestReview: () => void;
-  context: any; // The context object will now be passed as a prop
+  onRequestReview: () => void
+  storeId: string
+}
+
+interface StagedImage {
+  id: string
+  file: File
+  previewUrl: string // local blob URL for display
 }
 
 // =============================================================================
 // COMPONENT
 // =============================================================================
 
-export function ConciergeConversation({ onRequestReview, context }: ConciergeConversationProps) {
+export function ConciergeConversation({
+  onRequestReview,
+  storeId,
+}: ConciergeConversationProps) {
   const locale = useLocale()
   const t = useTranslations("concierge")
+  const router = useRouter()
   const isRtl = locale === "ar"
-  const { currentStep } = useConcierge()
+  const { refreshPreview } = useConcierge()
 
-  // Use the AI SDK hooks for messages and actions
-  const [aiMessages, setAiMessages] = useUIState<typeof AI>();
-  const { submitUserMessage } = useActions<typeof AI>() as any;
-
-  const [input, setInput] = useState("")
+  const [inputValue, setInputValue] = useState("")
+  const [stagedImages, setStagedImages] = useState<StagedImage[]>([])
+  const [isUploading, setIsUploading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const [showImageUpload, setShowImageUpload] = useState(aiMessages.length === 0)
-  
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const welcomeText = isRtl
+    ? "مرحبا! أنا مساعد إعداد متجرك في بروفا. سأساعدك خطوة بخطوة لإعداد متجرك.\n\nأرسل لي شعار متجرك للبدء! 📸"
+    : "Hi there! I'm your Brova store setup assistant. I'll help you set up your store step by step.\n\nSend me your store logo to get started! 📸"
+
+  const { messages, sendMessage, status } = useChat({
+    transport: new DefaultChatTransport({
+      api: "/api/onboarding/chat",
+      body: { storeId, locale },
+    }),
+    messages: [
+      {
+        id: "welcome",
+        role: "assistant" as const,
+        parts: [{ type: "text" as const, text: welcomeText }],
+      },
+    ],
+    onError: (error) => {
+      console.error("Onboarding chat error:", error)
+    },
+    onFinish: () => {
+      refreshPreview()
+    },
+  })
+
+  const isStreaming = status === "streaming" || status === "submitted"
+  const isBusy = isStreaming || isUploading
+  const prevStatusRef = useRef(status)
+
+  // Refresh preview when AI response completes (status goes from streaming → ready)
+  useEffect(() => {
+    const prev = prevStatusRef.current
+    prevStatusRef.current = status
+    if ((prev === "streaming" || prev === "submitted") && status === "ready") {
+      const timer = setTimeout(() => refreshPreview(), 300)
+      return () => clearTimeout(timer)
+    }
+  }, [status, refreshPreview])
+
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [aiMessages])
-  
+  }, [messages, status])
+
   // Focus input on mount
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
 
-  // Trigger initial AI greeting when conversation starts
+  // Cleanup blob URLs on unmount
   useEffect(() => {
-    if (aiMessages.length === 0 && (currentStep as string) === 'conversation') {
-      // Send empty message with special flag to trigger greeting
-      submitUserMessage('', {
-        ...context,
-        is_initial_greeting: true,
-      })
+    return () => {
+      stagedImages.forEach((img) => URL.revokeObjectURL(img.previewUrl))
     }
-  }, [aiMessages.length, currentStep, context, submitUserMessage]) // Only run when entering conversation phase
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  // Handle submit
-  const handleSubmit = async (e?: React.FormEvent) => {
-    e?.preventDefault()
-    if (!input.trim()) return
-    
-    const message = input.trim()
-    setInput("")
-    // Call the server action directly with the message and context
-    await submitUserMessage(message, context);
+  // ===========================================================================
+  // File picker → stage images (no upload yet)
+  // ===========================================================================
+  const handleFilePick = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const fileList = e.target.files
+      if (!fileList || fileList.length === 0) return
+
+      // Copy files BEFORE resetting input — FileList is a live object
+      // that gets emptied when value is cleared
+      const files = Array.from(fileList)
+      e.target.value = "" // reset so same file can be re-selected
+
+      const newImages: StagedImage[] = files
+        .filter((f) => f.type.startsWith("image/"))
+        .map((file) => ({
+          id: Math.random().toString(36).slice(2, 8),
+          file,
+          previewUrl: URL.createObjectURL(file),
+        }))
+
+      setStagedImages((prev) => [...prev, ...newImages])
+      // Focus input so user can type a message alongside
+      setTimeout(() => inputRef.current?.focus(), 100)
+    },
+    []
+  )
+
+  // Remove a staged image
+  const removeStagedImage = useCallback((id: string) => {
+    setStagedImages((prev) => {
+      const img = prev.find((i) => i.id === id)
+      if (img) URL.revokeObjectURL(img.previewUrl)
+      return prev.filter((i) => i.id !== id)
+    })
+  }, [])
+
+  // ===========================================================================
+  // Submit: upload staged images (if any) + send message
+  // ===========================================================================
+  const handleSubmit = useCallback(
+    async (e?: React.FormEvent) => {
+      e?.preventDefault()
+      const text = inputValue.trim()
+      const hasImages = stagedImages.length > 0
+
+      // Need at least text or images
+      if ((!text && !hasImages) || isBusy) return
+
+      setInputValue("")
+
+      // No images → plain text send
+      if (!hasImages) {
+        sendMessage({ text })
+        return
+      }
+
+      // Upload images first, then send
+      setIsUploading(true)
+      const imagesToUpload = [...stagedImages]
+      setStagedImages([]) // clear previews immediately
+
+      try {
+        const supabase = createClient()
+        const { data: userData } = await supabase.auth.getUser()
+        if (!userData?.user?.id) {
+          console.error("User not authenticated")
+          return
+        }
+
+        const uploadedUrls: string[] = []
+        const batchId = crypto.randomUUID()
+
+        for (const img of imagesToUpload) {
+          const ext = img.file.name.split(".").pop()
+          const path = `onboarding/${userData.user.id}/${batchId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+
+          const { error } = await supabase.storage
+            .from("uploads")
+            .upload(path, img.file)
+
+          if (error) {
+            console.error("Upload error:", error)
+            continue
+          }
+
+          const { data: publicUrl } = supabase.storage
+            .from("uploads")
+            .getPublicUrl(path)
+          uploadedUrls.push(publicUrl.publicUrl)
+
+          // Cleanup blob URL
+          URL.revokeObjectURL(img.previewUrl)
+        }
+
+        if (uploadedUrls.length > 0) {
+          const urlList = uploadedUrls.join("\n")
+          const userText = text || (locale === "ar"
+            ? `رفعت ${uploadedUrls.length} صورة للمنتجات`
+            : `I've uploaded ${uploadedUrls.length} product images`)
+          const fullText = `${userText}\n\n${locale === "ar" ? "روابط الصور" : "Image URLs"}:\n${urlList}`
+
+          sendMessage({
+            text: fullText,
+            files: uploadedUrls.map((url) => ({
+              type: "file" as const,
+              mediaType: "image/jpeg",
+              url,
+            })),
+          })
+        } else if (text) {
+          // Images failed but there was text — send text only
+          sendMessage({ text })
+        }
+      } catch (err) {
+        console.error("Image upload failed:", err)
+        // Fall back to text-only if we had text
+        if (text) sendMessage({ text })
+      } finally {
+        setIsUploading(false)
+      }
+    },
+    [inputValue, stagedImages, isBusy, locale, sendMessage]
+  )
+
+  const lastMessage = messages[messages.length - 1]
+  const showCursor = isStreaming && lastMessage?.role === "assistant"
+
+  // Strip image URLs from display text (keep only the human-readable part)
+  const stripImageUrls = (text: string) => {
+    return text.replace(/\n\n(روابط الصور|Image URLs):\n[\s\S]*$/, "").trim()
   }
-  
-  // These handlers will need to be re-implemented to work with the new action-based system
-  // The QuestionCard is now streamed directly with its own onSelect handler.
-  const handleOptionSelect = async (optionId: string, optionText: string) => {
-    console.log("handleOptionSelect not directly used here anymore. Logic moved to streamed components.");
-    // This function will likely be removed as onSelect will directly call submitUserMessage
-    // or another server action from within the streamed QuestionCard.
-  }
-  
-  // Skip logic will also need to be integrated into streamed components or a new server action.
-  const handleSkip = () => {
-    console.log("handleSkip not directly used here anymore. Logic needs re-evaluation.");
-  }
-  
+
+  const hasStagedImages = stagedImages.length > 0
+  const canSend = (!isBusy) && (inputValue.trim() || hasStagedImages)
+
+  // Detect if store setup is complete (complete_setup tool was called successfully)
+  const isSetupComplete = useMemo(
+    () =>
+      messages.some((msg) =>
+        msg.parts.some(
+          (p: any) =>
+            p.type === "tool-complete_setup" &&
+            p.state === "output-available"
+        )
+      ),
+    [messages]
+  )
+
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      {/* Header */}
-      <div className={cn(
-        "shrink-0 px-6 py-4 border-b border-border",
-        "flex items-center gap-3"
-      )}>
-        <div className={cn(
-          "w-10 h-10 rounded-xl",
-          "bg-gradient-to-br from-primary/20 to-primary/10",
-          "flex items-center justify-center"
-        )}>
-          <Sparkles className="w-5 h-5 text-primary" />
+      {/* Compact Header */}
+      <div
+        className={cn(
+          "shrink-0 px-4 py-2.5 border-b border-border",
+          "flex items-center gap-2"
+        )}
+      >
+        <div
+          className={cn(
+            "w-7 h-7 rounded-lg",
+            "bg-gradient-to-br from-primary/20 to-primary/10",
+            "flex items-center justify-center"
+          )}
+        >
+          <Sparkles className="w-3.5 h-3.5 text-primary" />
         </div>
-        <div>
-          <h2 className="font-semibold">{t("name")}</h2>
-          <p className="text-xs text-muted-foreground">{t("role")}</p>
+        <div className="flex items-baseline gap-2">
+          <h2 className="text-sm font-semibold">{t("name")}</h2>
+          <p className="text-[11px] text-muted-foreground">{t("role")}</p>
         </div>
       </div>
-      
+
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-        <AnimatePresence mode="popLayout">
-          {/* Image Upload Zone (first message) */}
-          {showImageUpload && aiMessages.length === 0 && (
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+        {messages.map((message, index) => {
+          const isAssistant = message.role === "assistant"
+          const isLastAssistant = isAssistant && index === messages.length - 1
+
+          const rawText = message.parts
+            .filter(
+              (p): p is { type: "text"; text: string } => p.type === "text"
+            )
+            .map((p) => p.text)
+            .join("")
+
+          const textContent = !isAssistant ? stripImageUrls(rawText) : rawText
+
+          const fileParts = (message.parts as any[]).filter(
+            (p) => p.type === "file"
+          ) as Array<{ type: "file"; mediaType: string; url: string }>
+
+          if (!textContent && fileParts.length === 0) return null
+
+          return (
             <motion.div
-              key="image-upload"
+              key={message.id}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-            >
-              <ImageUploadZone
-                onUploadComplete={async (urls, batchId) => {
-                  setShowImageUpload(false)
-                  // The handleImageUpload logic needs to be integrated into submitUserMessage
-                  // For now, this will need a specific server action to handle initial image upload
-                  // await handleImageUpload(urls, batchId)
-                  await submitUserMessage(`I've uploaded ${urls.length} images for batch ${batchId || 'N/A'}. URLs: ${urls.join(', ')}`, context);
-                }}
-                locale={locale as "en" | "ar"}
-              />
-            </motion.div>
-          )}
-
-          {aiMessages.map((message) => (
-            <div key={message.id} className="space-y-3">
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={springConfigs.smooth}
-              >
-                {message.display}
-              </motion.div>
-            </div>
-          ))}
-        </AnimatePresence>
-        
-        <div ref={messagesEndRef} />
-      </div>
-      
-      {/* Input */}
-      <div className="shrink-0 p-4 border-t border-border">
-        {/* Review button - This logic will be handled by a streamed component if needed */}
-        {/*
-        {hasDraftContent && onboardingStatus === "in_progress" && (
-          <div className="mb-3">
-            <Button
-              onClick={onRequestReview}
+              transition={springConfigs.smooth}
               className={cn(
-                "w-full h-12 rounded-xl",
-                "bg-gradient-to-r from-primary to-primary/90",
-                "flex items-center justify-center gap-2"
+                "flex",
+                isAssistant ? "justify-start" : "justify-end"
               )}
-              size="lg"
             >
-              <Check className="w-5 h-5" />
-              <span>{isRtl ? "مراجعة وحفظ" : "Review & Save"}</span>
-            </Button>
+              <div
+                className={cn(
+                  "max-w-[85%]",
+                  isAssistant ? "space-y-1" : ""
+                )}
+              >
+                {isAssistant && (
+                  <div className="flex items-center gap-1.5 px-1">
+                    <div className="flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary">
+                      <Sparkles className="h-2.5 w-2.5 text-primary-foreground" />
+                    </div>
+                    <span className="text-[11px] font-medium text-muted-foreground">
+                      {t("name")}
+                    </span>
+                  </div>
+                )}
+                {fileParts.length > 0 && (
+                  <div className="flex gap-1.5 flex-wrap mb-1">
+                    {fileParts.map((fp, i) => (
+                      <img
+                        key={i}
+                        src={fp.url}
+                        alt=""
+                        className="h-16 w-16 rounded-lg object-cover border border-border"
+                      />
+                    ))}
+                  </div>
+                )}
+                {textContent && (
+                  <div
+                    className={cn(
+                      "rounded-2xl px-3 py-2 text-[13px] leading-relaxed whitespace-pre-wrap",
+                      isAssistant
+                        ? "bg-muted/50 text-foreground"
+                        : "bg-primary text-primary-foreground",
+                      isRtl && "text-right"
+                    )}
+                  >
+                    {textContent}
+                    {isLastAssistant && showCursor && (
+                      <span className="ms-0.5 inline-block h-[1.2em] w-[2px] animate-pulse bg-foreground" />
+                    )}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )
+        })}
+
+        {/* Thinking / uploading indicator */}
+        {(isStreaming || isUploading) && lastMessage?.role !== "assistant" && (
+          <div className="flex justify-start">
+            <div className="flex items-center gap-1.5 px-1">
+              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary animate-pulse">
+                <Sparkles className="h-2.5 w-2.5 text-primary-foreground" />
+              </div>
+              <span className="text-[11px] text-muted-foreground">
+                {isUploading
+                  ? (isRtl ? "يرفع الصور..." : "Uploading...")
+                  : (isRtl ? "يفكر..." : "Thinking...")}
+              </span>
+            </div>
           </div>
         )}
-        */}
-        
-        <form onSubmit={handleSubmit} className="flex gap-3">
-          <div className="flex-1 relative">
+
+        {/* Completion action buttons */}
+        {isSetupComplete && !isStreaming && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={springConfigs.smooth}
+            className="flex gap-2 justify-center py-2"
+          >
+            <Button
+              variant="default"
+              size="sm"
+              className="gap-1.5 rounded-lg text-xs"
+              onClick={() => onRequestReview()}
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              {isRtl ? "معاينة المتجر" : "Preview Store"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 rounded-lg text-xs"
+              onClick={() => router.push(`/${locale}/admin`)}
+            >
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              {isRtl ? "لوحة التحكم" : "Admin Panel"}
+            </Button>
+          </motion.div>
+        )}
+
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input area */}
+      <div className="shrink-0 border-t border-border">
+        {/* Staged image previews */}
+        <AnimatePresence>
+          {hasStagedImages && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="overflow-hidden"
+            >
+              <div className="flex gap-2 px-3 pt-2 pb-1 overflow-x-auto scrollbar-none">
+                {stagedImages.map((img) => (
+                  <div key={img.id} className="relative shrink-0 group">
+                    <img
+                      src={img.previewUrl}
+                      alt=""
+                      className="h-14 w-14 rounded-lg object-cover border border-border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeStagedImage(img.id)}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Input row */}
+        <div className="px-3 py-2">
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            {/* Hidden file input */}
             <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={isRtl ? "اكتب رسالة..." : "Type a message..."}
-              className={cn(
-                "w-full h-12 px-4 rounded-xl",
-                "bg-muted border border-border",
-                "focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary",
-                "text-base placeholder:text-muted-foreground",
-                isRtl && "text-right"
-              )}
-              // Disabled logic will need to be derived from AI state or Streamed UI components
-              // disabled={isThinking}
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handleFilePick}
+              className="hidden"
             />
-          </div>
-          
-          {/* Skip button - This will be handled by streamed components if needed */}
-          {/*
-          {currentQuestion?.skippable && !isThinking && (
+
+            {/* Image button */}
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className="h-12 w-12 rounded-xl shrink-0"
-              onClick={handleSkip}
+              className="h-10 w-10 rounded-lg shrink-0"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isBusy}
             >
-              <SkipForward className="w-5 h-5" />
+              <ImagePlus className="w-4 h-4" />
             </Button>
-          )}
-          */}
-          
-          {/* Send button */}
-          <Button
-            type="submit"
-            size="icon"
-            className="h-12 w-12 rounded-xl shrink-0"
-            disabled={!input.trim()}
-          >
-            <Send className={cn(
-              "w-5 h-5",
-              isRtl && "rotate-180"
-            )} />
-          </Button>
-        </form>
-        
-        {/* Safety reminder */}
-        <p className="mt-2 text-xs text-center text-muted-foreground">
-          {t("safety.yourControl")}
-        </p>
+
+            <div className="flex-1 relative">
+              <input
+                ref={inputRef}
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder={
+                  hasStagedImages
+                    ? (isRtl ? "أضف وصف (اختياري)..." : "Add a caption (optional)...")
+                    : (isRtl ? "اكتب رسالة..." : "Type a message...")
+                }
+                className={cn(
+                  "w-full h-10 px-3 rounded-lg",
+                  "bg-muted border border-border",
+                  "focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary",
+                  "text-sm placeholder:text-muted-foreground",
+                  isRtl && "text-right"
+                )}
+                disabled={isBusy}
+              />
+            </div>
+
+            {/* Send button */}
+            <Button
+              type="submit"
+              size="icon"
+              className="h-10 w-10 rounded-lg shrink-0"
+              disabled={!canSend}
+            >
+              {isUploading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : isStreaming ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className={cn("w-4 h-4", isRtl && "rotate-180")} />
+              )}
+            </Button>
+          </form>
+        </div>
       </div>
     </div>
   )

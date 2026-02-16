@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useLocale, useTranslations } from "next-intl"
 import { 
@@ -17,7 +17,7 @@ import { springConfigs, motionPresets } from "@/lib/ui/motion-presets"
 import { useConcierge } from "./ConciergeProvider"
 import { ConciergeWelcome } from "./ConciergeWelcome"
 import { ConciergeConversation } from "./ConciergeConversation"
-import { DraftPreview } from "./DraftPreview"
+import { LiveStorePreview } from "./preview/LiveStorePreview"
 import { DraftApprovalScreen } from "./DraftApprovalScreen"
 
 // =============================================================================
@@ -36,11 +36,10 @@ export function ConciergeOnboarding() {
   const isRtl = locale === "ar"
   
   const {
-    isOnboardingActive,
     onboardingStatus,
     currentStep,
     draftState,
-    context,
+    storeId,
     startOnboarding,
     skipOnboarding,
     setCurrentStep,
@@ -139,10 +138,10 @@ export function ConciergeOnboarding() {
                   onBack={() => handlePhaseChange("conversation")}
                 />
               ) : (
-                <ConciergeConversation 
+                <ConciergeConversation
                   key="conversation"
                   onRequestReview={() => handlePhaseChange("review")}
-                  context={context}
+                  storeId={storeId || ""}
                 />
               )}
             </AnimatePresence>
@@ -151,12 +150,12 @@ export function ConciergeOnboarding() {
           {/* Right Panel: Live Preview (hidden during review) */}
           {phase !== "review" && (
             <div className={cn(
-              "w-[400px] shrink-0 bg-muted/30",
+              "w-[420px] shrink-0 bg-muted/30",
               "flex flex-col",
               // Hide on mobile
               "hidden lg:flex"
             )}>
-              <DraftPreview />
+              <LiveStorePreview />
             </div>
           )}
         </motion.div>

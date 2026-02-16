@@ -3,6 +3,12 @@ import { isAdmin } from "@/lib/admin/is-admin.server"
 import { verifyProductOwnership } from "@/lib/supabase/queries/admin-store"
 import { NextRequest, NextResponse } from "next/server"
 
+function parseNonNegativeNumber(value: unknown): number | null {
+  const parsed = typeof value === "number" ? value : Number(value)
+  if (!Number.isFinite(parsed) || parsed < 0) return null
+  return parsed
+}
+
 /**
  * PATCH /api/admin/products/[id]
  *
@@ -44,27 +50,69 @@ export async function PATCH(
   const updateData: Record<string, any> = {}
 
   if (status !== undefined) {
+    if (status !== "draft" && status !== "active") {
+      return NextResponse.json({ error: "Invalid status" }, { status: 400 })
+    }
     updateData.status = status
     if (status === 'active') updateData.published_at = new Date().toISOString()
   }
-  if (price !== undefined) updateData.price = price
+  if (price !== undefined) {
+    const parsedPrice = parseNonNegativeNumber(price)
+    if (parsedPrice === null) {
+      return NextResponse.json(
+        { error: "Price must be a non-negative number" },
+        { status: 400 }
+      )
+    }
+    updateData.price = parsedPrice
+  }
   if (inventory !== undefined) {
-    updateData.inventory = inventory
-    updateData.stock_quantity = inventory
+    const parsedInventory = parseNonNegativeNumber(inventory)
+    if (parsedInventory === null) {
+      return NextResponse.json(
+        { error: "Inventory must be a non-negative number" },
+        { status: 400 }
+      )
+    }
+    updateData.inventory = parsedInventory
+    updateData.stock_quantity = parsedInventory
   }
   if (images !== undefined) {
+    if (!Array.isArray(images) || !images.every((img) => typeof img === "string")) {
+      return NextResponse.json({ error: "Images must be an array of strings" }, { status: 400 })
+    }
     updateData.images = images
     updateData.image_url = images?.[0] || null
   }
-  if (name !== undefined) updateData.name = name
-  if (name_ar !== undefined) updateData.name_ar = name_ar
-  if (description !== undefined) updateData.description = description
-  if (description_ar !== undefined) updateData.description_ar = description_ar
-  if (category !== undefined) updateData.category = category
-  if (category_ar !== undefined) updateData.category_ar = category_ar
+  if (name !== undefined) {
+    if (typeof name !== "string" || !name.trim()) {
+      return NextResponse.json({ error: "Product name is required" }, { status: 400 })
+    }
+    updateData.name = name.trim()
+  }
+  if (name_ar !== undefined) {
+    updateData.name_ar = typeof name_ar === "string" ? name_ar.trim() || null : null
+  }
+  if (description !== undefined) {
+    updateData.description = typeof description === "string" ? description.trim() || null : null
+  }
+  if (description_ar !== undefined) {
+    updateData.description_ar = typeof description_ar === "string" ? description_ar.trim() || null : null
+  }
+  if (category !== undefined) {
+    updateData.category = typeof category === "string" ? category.trim() || null : null
+  }
+  if (category_ar !== undefined) {
+    updateData.category_ar = typeof category_ar === "string" ? category_ar.trim() || null : null
+  }
   if (category_id !== undefined) updateData.category_id = category_id
-  if (tags !== undefined) updateData.tags = tags
-  if (sku !== undefined) updateData.sku = sku
+  if (tags !== undefined) {
+    if (!Array.isArray(tags) || !tags.every((tag) => typeof tag === "string")) {
+      return NextResponse.json({ error: "Tags must be an array of strings" }, { status: 400 })
+    }
+    updateData.tags = tags.map((tag) => tag.trim()).filter(Boolean)
+  }
+  if (sku !== undefined) updateData.sku = typeof sku === "string" ? sku.trim() || null : null
   if (gender !== undefined) updateData.gender = gender
   if (sizes !== undefined) updateData.sizes = sizes
   if (colors !== undefined) updateData.colors = colors

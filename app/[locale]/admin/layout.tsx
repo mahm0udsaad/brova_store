@@ -2,7 +2,6 @@ import type { Metadata } from "next"
 import { AdminAuthWrapper } from "@/components/admin-auth-wrapper"
 import { AdminAssistantProvider } from "@/components/admin-assistant/AdminAssistantProvider"
 import { AdminShell } from "@/components/admin/AdminShell"
-import { ConciergeGate } from "@/components/admin-concierge/ConciergeGate"
 import { getTranslations } from "next-intl/server"
 import { getAdminStoreContext } from "@/lib/supabase/queries/admin-store"
 
@@ -33,14 +32,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const storeSlug = context?.store.slug || ""
 
   return (
-    <div className="dark theme-admin-ai min-h-screen bg-background font-sans text-foreground selection:bg-primary/30">
+    <div className="theme-admin-ai min-h-screen bg-background font-sans text-foreground selection:bg-primary/30">
       <AdminAuthWrapper>
         <AdminAssistantProvider>
-          <ConciergeGate>
-            <AdminShell storeName={storeName} storeStatus={storeStatus} storeSlug={storeSlug}>
-              {children}
-            </AdminShell>
-          </ConciergeGate>
+          <AdminShell storeName={storeName} storeStatus={storeStatus} storeSlug={storeSlug}>
+            {children}
+          </AdminShell>
         </AdminAssistantProvider>
       </AdminAuthWrapper>
     </div>

@@ -41,7 +41,39 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { product, error } = await upsertProduct(body)
+
+  const name =
+    typeof body?.name === "string" ? body.name.trim() : ""
+  const price = typeof body?.price === "number" ? body.price : Number(body?.price)
+  const inventory =
+    body?.inventory === undefined ? 0 : Number(body.inventory)
+
+  if (!name) {
+    return NextResponse.json(
+      { error: "Product name is required" },
+      { status: 400 }
+    )
+  }
+  if (!Number.isFinite(price) || price < 0) {
+    return NextResponse.json(
+      { error: "Price must be a non-negative number" },
+      { status: 400 }
+    )
+  }
+  if (!Number.isFinite(inventory) || inventory < 0) {
+    return NextResponse.json(
+      { error: "Inventory must be a non-negative number" },
+      { status: 400 }
+    )
+  }
+
+  const payload = {
+    ...body,
+    name,
+    price,
+    inventory,
+  }
+  const { product, error } = await upsertProduct(payload)
 
   if (error) {
     return NextResponse.json({ error }, { status: 500 })

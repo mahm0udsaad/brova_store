@@ -204,11 +204,31 @@ export interface DraftAppearance {
   logo_preview_url?: string
 }
 
+export interface DraftPageSection {
+  id: string
+  type: string
+  config: Record<string, unknown>
+  position: number
+}
+
+export interface DraftBanner {
+  id: string
+  image_url: string
+  title?: string
+  title_ar?: string
+  subtitle?: string
+  subtitle_ar?: string
+  position: string
+}
+
 export interface DraftStoreState {
   store_name?: DraftStoreName
+  store_type?: string
   products: DraftProduct[]
   appearance?: DraftAppearance
-  
+  page_sections?: DraftPageSection[]
+  banners?: DraftBanner[]
+
   // Meta
   last_updated: string
   is_dirty: boolean

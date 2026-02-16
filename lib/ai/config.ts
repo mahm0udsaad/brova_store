@@ -163,6 +163,18 @@ export const MODEL_REGISTRY: Record<string, ModelConfig> = {
     supportsTools: false,
     arabicQuality: "fair",
   },
+  "gemini-2.5-flash-image": {
+    id: "google/gemini-2.5-flash-image",
+    provider: "google",
+    name: "Gemini 2.5 Flash Image",
+    capabilities: ["image_gen", "vision"],
+    maxTokens: 8192,
+    costPer1kInput: 0.0001,
+    costPer1kOutput: 0.0004,
+    supportsStreaming: false,
+    supportsTools: false,
+    arabicQuality: "good",
+  },
 
   // Speech Models (Direct API, not through gateway)
   "whisper-large-v3": {

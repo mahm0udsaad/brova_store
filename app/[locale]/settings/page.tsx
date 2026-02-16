@@ -111,7 +111,7 @@ export default function SettingsPage() {
             <div className="space-y-3 text-sm">
               <div className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-muted-foreground" />
-                <span>+20 123 456 7890</span>
+                <span>{t("contactPhoneNumber")}</span>
               </div>
             </div>
           </div>

@@ -17,6 +17,10 @@ export type ComponentType =
   | "CheckoutFlow"
   | "StoreFooter"
   | "AIShoppingAssistant"
+  | "WhatsAppButton"
+  | "TrustBadges"
+  | "DeliveryInfo"
+  | "OccasionBanner"
 
 export interface ComponentNode<T extends ComponentType = ComponentType> {
   id: string

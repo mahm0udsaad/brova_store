@@ -94,7 +94,7 @@ export async function startVideoGeneration(
         prompt: task.prompt,
         duration: task.duration,
         aspect_ratio: task.aspect_ratio as any,
-        mode: "standard",
+        mode: "std",
       })
     } else if (task.type === "image_to_video") {
       if (!task.source_image) {
@@ -106,7 +106,7 @@ export async function startVideoGeneration(
         prompt: task.prompt,
         duration: task.duration,
         aspect_ratio: task.aspect_ratio as any,
-        mode: "standard",
+        mode: "std",
       })
     } else {
       throw new Error(`Unsupported video type: ${task.type}`)

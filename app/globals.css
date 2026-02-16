@@ -658,7 +658,7 @@ select:focus {
    AI ADMIN THEME
    Deep space, neon accents, glassmorphism
    ========================================================================== */
-.theme-admin-ai {
+.dark .theme-admin-ai {
   /* Deep space background */
   --background: oklch(0.05 0.01 240);
   --foreground: oklch(0.98 0 0);
@@ -694,7 +694,7 @@ select:focus {
   --sidebar-border: oklch(0.2 0.05 260 / 0.2);
 }
 
-.theme-admin-ai .glass-panel {
+.dark .theme-admin-ai .glass-panel {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -702,10 +702,10 @@ select:focus {
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
 }
 
-.theme-admin-ai .neon-glow {
+.dark .theme-admin-ai .neon-glow {
   box-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary);
 }
 
-.theme-admin-ai .text-glow {
+.dark .theme-admin-ai .text-glow {
   text-shadow: 0 0 10px var(--primary);
 }

@@ -70,7 +70,7 @@ export async function POST(request: Request) {
       },
     })
 
-    return result.toTextStreamResponse()
+    return result.toUIMessageStreamResponse()
   } catch (error) {
     const message = error instanceof Error ? error.message : "Assistant failed to respond."
     return new Response(message, { status: 500 })

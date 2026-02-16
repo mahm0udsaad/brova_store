@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import {
   Bot,
@@ -24,8 +25,9 @@ import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import { useAdminAssistantActions } from "@/components/admin-assistant/AdminAssistantProvider"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import { updateStoreContact } from "@/lib/actions/store-contact"
+import { deleteStoreAndRestartOnboarding } from "@/lib/actions/store-lifecycle"
 
 interface StoreSettings {
   id?: string
@@ -101,6 +103,8 @@ const defaultContact: StoreContact = {
 
 export function SettingsPageClient({ initialSettings, initialContact, aiUsage }: SettingsPageClientProps) {
   const t = useTranslations("admin")
+  const locale = useLocale()
+  const router = useRouter()
   const [settings, setSettings] = useState<StoreSettings>(
     initialSettings || defaultSettings
   )
@@ -108,6 +112,7 @@ export function SettingsPageClient({ initialSettings, initialContact, aiUsage }:
     initialContact || defaultContact
   )
   const [isSaving, setIsSaving] = useState(false)
+  const [isDeletingStore, setIsDeletingStore] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const { setPageContext } = useAdminAssistantActions() // Only subscribes to stable actions
 
@@ -222,6 +227,30 @@ export function SettingsPageClient({ initialSettings, initialContact, aiUsage }:
     }))
     setHasChanges(true)
   }, [])
+
+  const handleDeleteStore = useCallback(async () => {
+    const confirmed = window.confirm(t("settingsPage.dangerZone.deleteStoreConfirm"))
+    if (!confirmed) return
+
+    setIsDeletingStore(true)
+    try {
+      const result = await deleteStoreAndRestartOnboarding()
+      if (!result.success) {
+        throw new Error(result.error || t("settingsPage.dangerZone.deleteStoreFailed"))
+      }
+      router.push(`/${locale}/start`)
+      router.refresh()
+    } catch (error) {
+      console.error("Delete store error:", error)
+      alert(
+        error instanceof Error
+          ? error.message
+          : t("settingsPage.dangerZone.deleteStoreFailed")
+      )
+    } finally {
+      setIsDeletingStore(false)
+    }
+  }, [locale, router, t])
 
   return (
     <div className="min-h-screen bg-background">
@@ -482,6 +511,21 @@ export function SettingsPageClient({ initialSettings, initialContact, aiUsage }:
             </Button>
             <Button variant="outline" className="border-red-500/20 text-red-500 hover:bg-red-500/10">
               {t("settingsPage.dangerZone.deleteGeneratedAssets")}
+            </Button>
+            <Button
+              variant="outline"
+              className="border-red-500/20 text-red-500 hover:bg-red-500/10"
+              onClick={handleDeleteStore}
+              disabled={isDeletingStore}
+            >
+              {isDeletingStore ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  {t("settingsPage.dangerZone.deletingStore")}
+                </>
+              ) : (
+                t("settingsPage.dangerZone.deleteStore")
+              )}
             </Button>
           </div>
         </div>

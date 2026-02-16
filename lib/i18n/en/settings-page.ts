@@ -14,4 +14,5 @@ export const settingsPage = {
   shippingPayment: "Shipping & Payment",
   shippingPaymentValue: "Cash on Delivery (1-3 working days) - Flat rate: EGP 20",
   contactTitle: "Contact Us",
+  contactPhoneNumber: "+20 123 456 7890",
 }

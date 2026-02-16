@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       storeId: context.store.id,
     })
 
-    return result.toTextStreamResponse()
+    return result.toUIMessageStreamResponse()
   } catch (error) {
     console.error("Store builder API error:", error)
     const message =

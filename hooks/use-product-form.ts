@@ -51,6 +51,17 @@ interface UseProductFormOptions {
   autosaveDelay?: number
 }
 
+function validateProduct(values: ProductFormValues): string | null {
+  if (!values.name.trim()) return "Product name is required"
+  if (!Number.isFinite(values.price) || values.price < 0) {
+    return "Price must be a non-negative number"
+  }
+  if (!Number.isFinite(values.inventory) || values.inventory < 0) {
+    return "Inventory must be a non-negative number"
+  }
+  return null
+}
+
 export function useProductForm(options: UseProductFormOptions = {}) {
   const [values, setValues] = useState<ProductFormValues>({
     ...DEFAULT_VALUES,
@@ -108,6 +119,12 @@ export function useProductForm(options: UseProductFormOptions = {}) {
   const resumeAutosave = useCallback(() => { aiPausedRef.current = false }, [])
 
   const save = useCallback(async () => {
+    const validationError = validateProduct(values)
+    if (validationError) {
+      setError(validationError)
+      throw new Error(validationError)
+    }
+
     setSaving(true)
     setError(null)
     try {
@@ -141,6 +158,12 @@ export function useProductForm(options: UseProductFormOptions = {}) {
   }, [values, options.productId])
 
   const publish = useCallback(async () => {
+    const validationError = validateProduct(values)
+    if (validationError) {
+      setError(validationError)
+      throw new Error(validationError)
+    }
+
     updateField('status', 'active')
     // Need to save with active status
     setSaving(true)
@@ -151,7 +174,10 @@ export function useProductForm(options: UseProductFormOptions = {}) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...values, status: 'active' }),
       })
-      if (!res.ok) throw new Error('Failed to publish')
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(data?.error || 'Failed to publish')
+      }
       setDirty(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to publish')
@@ -191,5 +217,6 @@ export function useProductForm(options: UseProductFormOptions = {}) {
     error,
     pauseAutosave,
     resumeAutosave,
+    setError,
   }
 }

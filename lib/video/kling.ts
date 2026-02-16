@@ -24,7 +24,7 @@ export interface KlingTextToVideoRequest {
   aspect_ratio: "16:9" | "9:16" | "1:1"
   cfg_scale?: number // 1-10, default 5
   seed?: number
-  mode?: "standard" | "pro"
+  mode?: "std" | "pro"
 }
 
 export interface KlingImageToVideoRequest {
@@ -35,7 +35,7 @@ export interface KlingImageToVideoRequest {
   aspect_ratio?: "16:9" | "9:16" | "1:1"
   cfg_scale?: number
   seed?: number
-  mode?: "standard" | "pro"
+  mode?: "std" | "pro"
 }
 
 export interface KlingVideoTask {
@@ -103,7 +103,7 @@ export class KlingClient {
         aspect_ratio: request.aspect_ratio,
         cfg_scale: request.cfg_scale ?? 5,
         seed: request.seed,
-        mode: request.mode ?? "standard",
+        mode: request.mode ?? "std",
       }),
     })
   }
@@ -125,7 +125,7 @@ export class KlingClient {
         aspect_ratio: request.aspect_ratio,
         cfg_scale: request.cfg_scale ?? 5,
         seed: request.seed,
-        mode: request.mode ?? "standard",
+        mode: request.mode ?? "std",
       }),
     })
   }
@@ -201,18 +201,10 @@ export class KlingClient {
       body?: string
     }
   ): Promise<any> {
-    const timestamp = Date.now().toString()
-    const signature = this.generateSignature(
-      options.method,
-      path,
-      timestamp,
-      options.body
-    )
+    const token = this.generateJWT()
 
     const headers: Record<string, string> = {
-      "X-Access-Key": this.config.accessKey,
-      "X-Timestamp": timestamp,
-      "X-Signature": signature,
+      Authorization: `Bearer ${token}`,
     }
 
     if (options.body) {
@@ -238,20 +230,30 @@ export class KlingClient {
   }
 
   /**
-   * Generate request signature using HMAC-SHA256
+   * Generate JWT token for Kling API authentication (HS256)
    */
-  private generateSignature(
-    method: string,
-    path: string,
-    timestamp: string,
-    body?: string
-  ): string {
-    const stringToSign = [method, path, timestamp, body || ""].join("\n")
+  private generateJWT(): string {
+    const now = Math.floor(Date.now() / 1000)
 
-    return crypto
+    const header = { alg: "HS256", typ: "JWT" }
+    const payload = {
+      iss: this.config.accessKey,
+      exp: now + 1800, // 30 minutes
+      nbf: now - 5,
+    }
+
+    const encode = (obj: object) =>
+      Buffer.from(JSON.stringify(obj))
+        .toString("base64url")
+
+    const headerB64 = encode(header)
+    const payloadB64 = encode(payload)
+    const signature = crypto
       .createHmac("sha256", this.config.secretKey)
-      .update(stringToSign)
-      .digest("hex")
+      .update(`${headerB64}.${payloadB64}`)
+      .digest("base64url")
+
+    return `${headerB64}.${payloadB64}.${signature}`
   }
 }
 

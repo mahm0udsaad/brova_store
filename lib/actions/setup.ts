@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import crypto from 'crypto'
 
 type StoreType = 'clothing' | 'car_care'
 
@@ -105,6 +106,154 @@ export async function createOrganizationFromIntent(): Promise<CreateOrganization
     }
   } catch (error) {
     console.error('Unexpected error in createOrganizationFromIntent:', error)
+    return {
+      success: false,
+      errorCode: 'database_error',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    }
+  }
+}
+
+// =============================================================================
+// ENSURE ORGANIZATION + STORE FOR CHAT-FIRST ONBOARDING
+// =============================================================================
+// Creates organization/store without requiring onboarding_intent store_type.
+// This enables onboarding that starts directly with AI conversation.
+
+export type EnsureOrganizationForOnboardingResult =
+  | { success: true; organizationId: string; storeId: string; alreadyExisted: boolean }
+  | { success: false; errorCode: 'unauthorized' | 'database_error'; message?: string }
+
+export async function ensureOrganizationForOnboarding(): Promise<EnsureOrganizationForOnboardingResult> {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return { success: false, errorCode: 'unauthorized' }
+  }
+
+  try {
+    const existing = await getUserOrganization()
+    if (existing?.organizationId && existing.storeId) {
+      return {
+        success: true,
+        organizationId: existing.organizationId,
+        storeId: existing.storeId,
+        alreadyExisted: true,
+      }
+    }
+
+    let organizationId = existing?.organizationId || null
+    let organizationSlug = existing?.organizationSlug || null
+    let alreadyExisted = !!existing?.organizationId
+
+    // Create organization if missing
+    if (!organizationId) {
+      const baseOrgSlug = `org-${user.id.slice(0, 8)}`
+      for (let i = 0; i < 6; i++) {
+        const suffix = i === 0 ? '' : `-${crypto.randomUUID().slice(0, 4)}`
+        const candidateSlug = `${baseOrgSlug}${suffix}`
+        const { data: insertedOrg, error: orgInsertError } = await supabase
+          .from('organizations')
+          .insert({
+            owner_id: user.id,
+            slug: candidateSlug,
+            name: candidateSlug,
+            type: 'standard',
+          } as any)
+          .select('id, slug')
+          .single()
+
+        if (!orgInsertError && insertedOrg?.id) {
+          organizationId = insertedOrg.id
+          organizationSlug = insertedOrg.slug
+          break
+        }
+
+        if (orgInsertError?.code !== '23505') {
+          return {
+            success: false,
+            errorCode: 'database_error',
+            message: orgInsertError?.message || 'Failed to create organization',
+          }
+        }
+      }
+    }
+
+    if (!organizationId) {
+      return {
+        success: false,
+        errorCode: 'database_error',
+        message: 'Could not create or resolve organization',
+      }
+    }
+
+    // Create store if missing
+    const baseStoreSlug = `store-${user.id.slice(0, 8)}`
+    for (let i = 0; i < 6; i++) {
+      const suffix = i === 0 ? '' : `-${crypto.randomUUID().slice(0, 4)}`
+      const candidateSlug = `${baseStoreSlug}${suffix}`
+      const candidateName = organizationSlug || candidateSlug
+
+      const { data: insertedStore, error: storeInsertError } = await supabase
+        .from('stores')
+        .insert({
+          organization_id: organizationId,
+          slug: candidateSlug,
+          name: candidateName,
+          status: 'draft',
+          theme_id: null,
+          default_locale: 'en',
+        } as any)
+        .select('id')
+        .single()
+
+      if (!storeInsertError && insertedStore?.id) {
+        return {
+          success: true,
+          organizationId,
+          storeId: insertedStore.id,
+          alreadyExisted,
+        }
+      }
+
+      // If a store was concurrently created for this organization, fetch it.
+      if (storeInsertError?.code === '23505') {
+        const { data: existingStore } = await supabase
+          .from('stores')
+          .select('id')
+          .eq('organization_id', organizationId)
+          .single()
+
+        if (existingStore?.id) {
+          return {
+            success: true,
+            organizationId,
+            storeId: existingStore.id,
+            alreadyExisted: true,
+          }
+        }
+        // otherwise retry for slug conflicts
+        continue
+      }
+
+      return {
+        success: false,
+        errorCode: 'database_error',
+        message: storeInsertError?.message || 'Failed to create store',
+      }
+    }
+
+    return {
+      success: false,
+      errorCode: 'database_error',
+      message: 'Could not create or resolve store',
+    }
+  } catch (error) {
     return {
       success: false,
       errorCode: 'database_error',
