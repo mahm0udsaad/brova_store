@@ -11,6 +11,7 @@ import {
   PreviewHeroBanner,
   PreviewProductGrid,
   PreviewProductCarousel,
+  PreviewCategoryBrowser,
   PreviewTrustBadges,
   PreviewDeliveryInfo,
   PreviewWhatsAppButton,
@@ -244,6 +245,8 @@ function SectionRenderer({
       return <PreviewOccasionBanner config={section.config} />
     case "StoreFooter":
       return <PreviewFooter storeName={storeName} />
+    case "CategoryBrowser":
+      return <PreviewCategoryBrowser config={section.config} />
     case "WhatsAppButton":
       // Rendered as floating button outside the section list
       return null

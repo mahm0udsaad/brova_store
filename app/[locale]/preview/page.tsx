@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import HomePageClient from '../home-page-client'
 import { ThemeRenderer } from '@/lib/theme/renderer'
 import { themeComponentRegistry } from '@/lib/theme/registry'
-import { getTemplateById, generalTemplate } from '@/lib/theme/templates'
+import { getTemplateById, classicTemplate } from '@/lib/theme/templates'
 
 interface PreviewPageProps {
   searchParams: Promise<{ token?: string; template?: string }>
@@ -21,7 +21,7 @@ export default async function PreviewPage({ searchParams, params }: PreviewPageP
   const { locale } = await params
 
   if (!token && template) {
-    const selectedTemplate = getTemplateById(template) ?? generalTemplate
+    const selectedTemplate = getTemplateById(template) ?? classicTemplate
     return (
       <ThemeRenderer
         nodes={selectedTemplate.nodes}

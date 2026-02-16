@@ -387,6 +387,40 @@ export function PreviewOccasionBanner({ config }: { config: Record<string, unkno
 }
 
 // ---------------------------------------------------------------------------
+// Category Browser
+// ---------------------------------------------------------------------------
+export function PreviewCategoryBrowser({ config }: { config: Record<string, unknown> }) {
+  const locale = useLocale()
+  const isAr = locale === "ar"
+  const columns = Math.min((config.columns as number) || 3, 4)
+
+  const placeholders = isAr
+    ? ["ملابس", "إكسسوارات", "أحذية", "حقائب"]
+    : ["Clothing", "Accessories", "Shoes", "Bags"]
+
+  return (
+    <div className="px-4 py-3" dir={isAr ? "rtl" : "ltr"}>
+      <p className="text-[10px] font-medium mb-2" style={{ color: "var(--preview-foreground)" }}>
+        {isAr ? "الأقسام" : "Categories"}
+      </p>
+      <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
+        {placeholders.slice(0, columns).map((label, i) => (
+          <div
+            key={i}
+            className="aspect-square rounded-lg flex items-center justify-center"
+            style={{ backgroundColor: "var(--preview-muted-bg)" }}
+          >
+            <span className="text-[8px] font-medium" style={{ color: "var(--preview-muted)" }}>
+              {label}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Footer
 // ---------------------------------------------------------------------------
 export function PreviewFooter({ storeName }: { storeName?: string }) {

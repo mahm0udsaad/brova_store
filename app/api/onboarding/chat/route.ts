@@ -33,14 +33,14 @@ const STORE_TYPES = [
 type StoreType = (typeof STORE_TYPES)[number]
 
 const STORE_TYPE_TEMPLATE_MAP: Record<StoreType, string> = {
-  clothing: "fashion",
-  beauty: "fashion",
-  electronics: "electronics",
-  food: "general",
-  home_decor: "general",
-  car_care: "general",
-  services: "general",
-  general: "general",
+  clothing: "showcase",
+  beauty: "boutique",
+  electronics: "catalog",
+  food: "classic",
+  home_decor: "classic",
+  car_care: "catalog",
+  services: "boutique",
+  general: "classic",
 }
 
 const STORE_TYPE_PALETTE: Record<
@@ -133,8 +133,12 @@ These are the components you can add to a store page using add_page_section:
 - حدد النوع من كلام التاجر أو من صور المنتجات
 - إذا رفع صور: حلل الصور بعناية وحدد نوع المنتجات من محتوى الصورة الفعلي
 - الأنواع المتاحة: clothing (ملابس/أزياء) | beauty (تجميل/عناية) | electronics (إلكترونيات) | food (أطعمة/مشروبات) | home_decor (ديكور/أثاث) | car_care (عناية سيارات) | services (خدمات) | general (عام)
-- بعد حفظ النوع، استخدم setup_page_layout لتطبيق القالب المناسب تلقائياً
+- بعد حفظ النوع، استخدم setup_page_layout لتطبيق القالب المناسب تلقائياً:
+  - clothing → "showcase" | beauty → "boutique" | electronics → "catalog" | car_care → "catalog"
+  - food → "classic" | home_decor → "classic" | services → "boutique" | general → "classic"
 - ثم أخبر التاجر: "جهزت قالب متجرك! نبدأ نضيف منتجاتك"
+- **إذا طلب التاجر تغيير التصميم/القالب**: استخدم setup_page_layout مع القالب المطلوب
+  - القوالب المتاحة: classic (شبكة تقليدية متوازنة) | showcase (عرض دوار + أقسام + شبكة 3 أعمدة) | catalog (أقسام أولاً، شبكة كثيفة، توصيل) | boutique (بسيط وفاخر، عرض دوار فقط بدون شبكة)
 
 ## الخطوة 3 — المنتجات:
 - اسأل عن اسم المنتج وسعره (كلاهما مطلوب قبل الحفظ)
@@ -196,8 +200,12 @@ ${componentDocs}
 - Determine type from the merchant's messages or uploaded product images
 - If images are uploaded: carefully analyze the actual image content — do NOT guess
 - Available types: clothing | beauty | electronics | food | home_decor | car_care | services | general
-- After saving type, use setup_page_layout to apply the matching template automatically
+- After saving type, use setup_page_layout to apply the matching template automatically:
+  - clothing → "showcase" | beauty → "boutique" | electronics → "catalog" | car_care → "catalog"
+  - food → "classic" | home_decor → "classic" | services → "boutique" | general → "classic"
 - Tell merchant: "I've set up your store template! Let's add your products."
+- **If the merchant asks to change the layout/template**: use setup_page_layout with the requested template
+  - Available templates: classic (balanced grid layout) | showcase (carousel + categories + 3-col grid) | catalog (categories-first, dense grid, delivery info) | boutique (minimal, carousel-only, no grid)
 
 ## Step 3 — Products:
 - Both name AND price required before saving
@@ -428,15 +436,15 @@ export async function POST(req: NextRequest) {
         // =====================================================================
         setup_page_layout: tool({
           description:
-            "Apply a page template to the store. Sets up the initial component layout. Call after set_store_type.",
+            "Apply a page template to the store. Also use this to switch templates when the user asks for a different layout. Templates: classic (balanced grid), showcase (carousel + categories + grid), catalog (categories-first, dense, delivery info), boutique (minimal, carousel-only, no grid).",
           inputSchema: z.object({
             template: z
-              .enum(["fashion", "electronics", "general"])
-              .describe("Template to apply based on store type"),
+              .enum(["classic", "showcase", "catalog", "boutique"])
+              .describe("classic=balanced grid, showcase=editorial carousel+categories+grid, catalog=category-first dense, boutique=minimal carousel-only"),
           }),
           execute: async ({ template }) => {
-            const { themeTemplates } = await import("@/lib/theme/templates")
-            const tmpl = themeTemplates.find((t) => t.id === template)
+            const { getTemplateById } = await import("@/lib/theme/templates")
+            const tmpl = getTemplateById(template)
             if (!tmpl) return { success: false, error: "Template not found" }
 
             // Delete existing components
@@ -460,31 +468,55 @@ export async function POST(req: NextRequest) {
 
             if (error) return { success: false, error: error.message }
 
-            // Also apply default palette to store_settings
-            const storeType = (store.store_type || "general") as StoreType
-            const palette = STORE_TYPE_PALETTE[storeType] || STORE_TYPE_PALETTE.general
+            // Only apply default palette on initial setup (no existing colors).
+            // If colors already exist, the user/AI set them — don't overwrite.
+            const { data: existingSettings } = await supabase
+              .from("store_settings")
+              .select("appearance, theme_config")
+              .eq("store_id", storeId)
+              .single()
 
-            await supabase.from("store_settings").upsert(
-              {
-                merchant_id: user!.id,
-                store_id: storeId,
-                appearance: {
-                  primary_color: palette.primary,
-                  accent_color: palette.accent,
-                  font_family: "Cairo",
-                },
-                theme_config: {
-                  colors: {
-                    primary: palette.primary,
-                    secondary: palette.secondary,
-                    accent: palette.accent,
-                    background: palette.background,
+            const existingAppearance =
+              (existingSettings?.appearance as Record<string, any>) || {}
+            const existingThemeConfig =
+              (existingSettings?.theme_config as Record<string, any>) || {}
+            const hasExistingColors = !!(existingAppearance.primary_color || existingThemeConfig?.colors?.primary)
+
+            if (!hasExistingColors) {
+              // Re-fetch store type (may have been updated by set_store_type in the same run)
+              const { data: freshStore } = await supabase
+                .from("stores")
+                .select("store_type")
+                .eq("id", storeId)
+                .single()
+              const storeType = ((freshStore?.store_type || store.store_type || "general") as StoreType)
+              const palette = STORE_TYPE_PALETTE[storeType] || STORE_TYPE_PALETTE.general
+
+              await supabase.from("store_settings").upsert(
+                {
+                  merchant_id: user!.id,
+                  store_id: storeId,
+                  appearance: {
+                    ...existingAppearance,
+                    primary_color: palette.primary,
+                    accent_color: palette.accent,
+                    font_family: existingAppearance.font_family || "Cairo",
                   },
-                },
-                updated_at: new Date().toISOString(),
-              } as any,
-              { onConflict: "merchant_id" }
-            )
+                  theme_config: {
+                    ...existingThemeConfig,
+                    colors: {
+                      ...(existingThemeConfig.colors || {}),
+                      primary: palette.primary,
+                      secondary: palette.secondary,
+                      accent: palette.accent,
+                      background: palette.background,
+                    },
+                  },
+                  updated_at: new Date().toISOString(),
+                } as any,
+                { onConflict: "merchant_id" }
+              )
+            }
 
             return {
               success: true,

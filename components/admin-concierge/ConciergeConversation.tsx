@@ -53,6 +53,7 @@ export function ConciergeConversation({
   const [inputValue, setInputValue] = useState("")
   const [stagedImages, setStagedImages] = useState<StagedImage[]>([])
   const [isUploading, setIsUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -75,9 +76,6 @@ export function ConciergeConversation({
     ],
     onError: (error) => {
       console.error("Onboarding chat error:", error)
-    },
-    onFinish: () => {
-      refreshPreview()
     },
   })
 
@@ -163,6 +161,7 @@ export function ConciergeConversation({
       if ((!text && !hasImages) || isBusy) return
 
       setInputValue("")
+      setUploadError(null)
 
       // No images → plain text send
       if (!hasImages) {
@@ -179,7 +178,8 @@ export function ConciergeConversation({
         const supabase = createClient()
         const { data: userData } = await supabase.auth.getUser()
         if (!userData?.user?.id) {
-          console.error("User not authenticated")
+          setUploadError(isRtl ? "يرجى تسجيل الدخول أولاً" : "Please sign in first")
+          setIsUploading(false)
           return
         }
 
@@ -229,13 +229,14 @@ export function ConciergeConversation({
         }
       } catch (err) {
         console.error("Image upload failed:", err)
+        setUploadError(isRtl ? "فشل رفع الصور، حاول مرة أخرى" : "Image upload failed, please try again")
         // Fall back to text-only if we had text
         if (text) sendMessage({ text })
       } finally {
         setIsUploading(false)
       }
     },
-    [inputValue, stagedImages, isBusy, locale, sendMessage]
+    [inputValue, stagedImages, isBusy, locale, isRtl, sendMessage]
   )
 
   const lastMessage = messages[messages.length - 1]
@@ -287,7 +288,7 @@ export function ConciergeConversation({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3" dir={isRtl ? "rtl" : "ltr"}>
         {messages.map((message, index) => {
           const isAssistant = message.role === "assistant"
           const isLastAssistant = isAssistant && index === messages.length - 1
@@ -416,7 +417,16 @@ export function ConciergeConversation({
       </div>
 
       {/* Input area */}
-      <div className="shrink-0 border-t border-border">
+      <div className="shrink-0 border-t border-border" dir={isRtl ? "rtl" : "ltr"}>
+        {/* Upload error banner */}
+        {uploadError && (
+          <div className="flex items-center justify-between px-3 py-1.5 bg-destructive/10 text-destructive text-xs">
+            <span>{uploadError}</span>
+            <button type="button" onClick={() => setUploadError(null)} className="p-0.5 hover:opacity-70">
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        )}
         {/* Staged image previews */}
         <AnimatePresence>
           {hasStagedImages && (
