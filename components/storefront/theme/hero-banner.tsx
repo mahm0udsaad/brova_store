@@ -10,6 +10,10 @@ interface HeroBannerConfig {
   ctaKey?: string
   backgroundUrl?: string
   align?: "start" | "center"
+  /** Direct text overrides (from store_banners, bypasses i18n) */
+  titleOverride?: string
+  subtitleOverride?: string
+  ctaOverride?: string
 }
 
 export async function HeroBanner({
@@ -23,14 +27,21 @@ export async function HeroBanner({
     ctaKey = "hero.cta",
     backgroundUrl,
     align = "start",
+    titleOverride,
+    subtitleOverride,
+    ctaOverride,
   } = config
+
+  const title = titleOverride || t(titleKey)
+  const subtitle = subtitleOverride || t(subtitleKey)
+  const cta = ctaOverride || t(ctaKey)
 
   return (
     <section className="relative overflow-hidden bg-[var(--theme-background)] text-[var(--theme-foreground)]">
       {backgroundUrl ? (
         <Image
           src={backgroundUrl}
-          alt={t("hero.imageAlt")}
+          alt={title}
           fill
           className="object-cover"
           priority
@@ -48,14 +59,14 @@ export async function HeroBanner({
               {t("hero.kicker")}
             </p>
             <h1 className="text-3xl font-semibold sm:text-4xl lg:text-5xl leading-tight font-[var(--theme-font-heading)]">
-              {t(titleKey)}
+              {title}
             </h1>
             <p className="text-base sm:text-lg text-[var(--theme-muted)]">
-              {t(subtitleKey)}
+              {subtitle}
             </p>
             <div className={cn("flex items-center gap-3", align === "center" && "justify-center")}>
               <Button className="rounded-full px-6 py-5 bg-[var(--theme-primary)] text-white hover:bg-[var(--theme-primary)]/90">
-                {t(ctaKey)}
+                {cta}
               </Button>
               <Button
                 variant="outline"

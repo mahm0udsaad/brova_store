@@ -213,6 +213,27 @@ export async function ensureOrganizationForOnboarding(): Promise<EnsureOrganizat
         .single()
 
       if (!storeInsertError && insertedStore?.id) {
+        // Ensure store_settings and store_contact rows exist for the new store
+        await Promise.all([
+          supabase.from('store_settings').upsert(
+            {
+              merchant_id: user.id,
+              store_id: insertedStore.id,
+              appearance: {},
+              theme_config: {},
+              updated_at: new Date().toISOString(),
+            } as any,
+            { onConflict: 'merchant_id' }
+          ),
+          supabase.from('store_contact').upsert(
+            {
+              store_id: insertedStore.id,
+              updated_at: new Date().toISOString(),
+            } as any,
+            { onConflict: 'store_id' }
+          ),
+        ])
+
         return {
           success: true,
           organizationId,

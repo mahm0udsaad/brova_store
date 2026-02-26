@@ -57,6 +57,7 @@ export interface StorefrontContext {
     status: 'draft' | 'active' | 'suspended' | 'archived'
     theme_id: string | null
     default_locale: string | null
+    skin_id: string | null
   }
   organization: {
     id: string
@@ -117,7 +118,7 @@ export const getStorefrontContext = cache(async (
   // Get the organization's store
   const { data: store, error: storeError } = await supabase
     .from('stores')
-    .select('id, name, slug, store_type, status, theme_id, default_locale')
+    .select('id, name, slug, store_type, status, theme_id, default_locale, skin_id')
     .eq('organization_id', org.id)
     .single()
 
@@ -163,6 +164,7 @@ export const getStorefrontContext = cache(async (
       status: store.status as 'draft' | 'active' | 'suspended' | 'archived',
       theme_id: store.theme_id,
       default_locale: store.default_locale,
+      skin_id: store.skin_id || null,
     },
     organization: {
       id: org.id,
@@ -315,4 +317,127 @@ export async function getStorefrontCategoryEntities(
   }
 
   return (data || []) as StorefrontCategory[]
+}
+
+// =============================================================================
+// Store Components (from store_components table)
+// =============================================================================
+
+export interface StorefrontComponent {
+  id: string
+  store_id: string
+  component_type: string
+  config: Record<string, unknown>
+  position: number
+  status: 'active' | 'inactive'
+}
+
+/**
+ * Get active store components ordered by position.
+ * These define the storefront page layout.
+ */
+export async function getStorefrontComponents(
+  storeId: string
+): Promise<StorefrontComponent[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('store_components')
+    .select('id, store_id, component_type, config, position, status')
+    .eq('store_id', storeId)
+    .eq('status', 'active')
+    .order('position', { ascending: true })
+
+  if (error || !data) {
+    console.error('[getStorefrontComponents] Query failed:', error)
+    return []
+  }
+
+  return (data || []) as StorefrontComponent[]
+}
+
+// =============================================================================
+// Store Theme Settings (from store_settings table)
+// =============================================================================
+
+export interface StorefrontThemeConfig {
+  colors?: {
+    primary?: string
+    secondary?: string
+    accent?: string
+    background?: string
+  }
+  typography?: {
+    fontBody?: string
+    fontHeading?: string
+  }
+}
+
+export interface StorefrontSettings {
+  appearance: Record<string, unknown> | null
+  theme_config: StorefrontThemeConfig | null
+}
+
+/**
+ * Get store theme settings (colors, fonts, branding).
+ */
+export async function getStorefrontSettings(
+  storeId: string
+): Promise<StorefrontSettings | null> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('store_settings')
+    .select('appearance, theme_config')
+    .eq('store_id', storeId)
+    .single()
+
+  if (error || !data) {
+    return null
+  }
+
+  return {
+    appearance: data.appearance as Record<string, unknown> | null,
+    theme_config: data.theme_config as StorefrontThemeConfig | null,
+  }
+}
+
+// =============================================================================
+// Store Banners (from store_banners table)
+// =============================================================================
+
+export interface StorefrontBanner {
+  id: string
+  image_url: string
+  title: string | null
+  title_ar: string | null
+  subtitle: string | null
+  subtitle_ar: string | null
+  cta_text: string | null
+  cta_text_ar: string | null
+  position: string
+  sort_order: number
+  is_active: boolean
+}
+
+/**
+ * Get active banners for a store, ordered by sort_order.
+ */
+export async function getStorefrontBanners(
+  storeId: string
+): Promise<StorefrontBanner[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('store_banners')
+    .select('id, image_url, title, title_ar, subtitle, subtitle_ar, cta_text, cta_text_ar, position, sort_order, is_active')
+    .eq('store_id', storeId)
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true })
+
+  if (error || !data) {
+    return []
+  }
+
+  return (data || []) as StorefrontBanner[]
 }

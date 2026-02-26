@@ -30,6 +30,13 @@ export const admin = {
     allGoodTitle: "Everything is running smoothly!",
     allGoodDesc: "No items require your attention right now",
   },
+  domainsPage: {
+    title: "Domains",
+    subtitle: "Manage your custom domain names.",
+    addDomain: "Add Domain",
+    noDomains: "No domains found",
+    noDomainsDescription: "Connect a custom domain to your store.",
+  },
   dashboardPage: {
     title: "Admin Dashboard",
     subtitle: "Overview of products, users, and try-on usage.",

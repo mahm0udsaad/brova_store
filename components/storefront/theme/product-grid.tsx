@@ -1,4 +1,5 @@
 import Image from "next/image"
+import Link from "next/link"
 import { getTranslations } from "next-intl/server"
 import type { ThemeComponentProps } from "@/types/theme"
 import { Button } from "@/components/ui/button"
@@ -11,6 +12,8 @@ interface ProductItem {
   price?: number | null
   imageUrl?: string
   badgeKey?: string
+  slug?: string
+  currency?: string
 }
 
 interface ProductGridConfig {
@@ -21,10 +24,12 @@ interface ProductGridConfig {
   showPrices?: boolean
 }
 
-function formatCurrency(locale: string, value: number) {
-  return new Intl.NumberFormat(locale === "ar" ? "ar-EG" : "en-US", {
+function formatCurrency(locale: string, value: number, currency?: string) {
+  return new Intl.NumberFormat(locale === "ar" ? "ar-SA" : "en-US", {
     style: "currency",
-    currency: "USD",
+    currency: currency || "SAR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(value)
 }
 
@@ -40,12 +45,18 @@ function ProductCard({
   t: (key: string) => string
 }) {
   const name = product.nameKey ? t(product.nameKey) : product.name || ""
-  return (
+  const href = product.slug ? `/${locale}/product/${product.id}` : undefined
+
+  const content = (
     <article className="group rounded-2xl border border-[var(--theme-border)] bg-white p-3 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
       <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-neutral-100">
         {product.imageUrl ? (
-          <Image src={product.imageUrl} alt={name} fill className="object-cover" />
-        ) : null}
+          <Image src={product.imageUrl} alt={name} fill className="object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-neutral-300 text-4xl">
+            📦
+          </div>
+        )}
         {product.badgeKey ? (
           <span className="absolute start-3 top-3 rounded-full bg-[var(--theme-accent)] px-3 py-1 text-xs font-semibold text-white">
             {t(product.badgeKey)}
@@ -53,15 +64,20 @@ function ProductCard({
         ) : null}
       </div>
       <div className="mt-3 space-y-2">
-        <h3 className="text-sm font-medium text-start">{name}</h3>
+        <h3 className="text-sm font-medium text-start line-clamp-2">{name}</h3>
         {showPrice && typeof product.price === "number" ? (
-          <div className="text-sm font-semibold" dir="ltr">
-            {formatCurrency(locale, product.price)}
+          <div className="text-sm font-semibold text-[var(--theme-primary)]" dir="ltr">
+            {formatCurrency(locale, product.price, product.currency)}
           </div>
         ) : null}
       </div>
     </article>
   )
+
+  if (href) {
+    return <Link href={href} className="block">{content}</Link>
+  }
+  return content
 }
 
 export async function ProductGrid({

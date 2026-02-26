@@ -933,6 +933,26 @@ export async function POST(req: NextRequest) {
         // =====================================================================
         // TOOL 11: Complete Setup
         // =====================================================================
+        // =====================================================================
+        // TOOL: Set Store Skin
+        // =====================================================================
+        set_store_skin: tool({
+          description:
+            "Set the visual design skin for the store. Available skins: 'default' (basic), 'yns' (modern minimal with large images and subtle shadows — recommended for most stores), 'paper' (editorial structured with borders, professional look). Default to 'yns' for new stores.",
+          inputSchema: z.object({
+            skin_id: z.enum(["default", "yns", "paper"]).describe("The skin to apply"),
+          }),
+          execute: async ({ skin_id }) => {
+            const { error } = await supabase
+              .from("stores")
+              .update({ skin_id, updated_at: new Date().toISOString() })
+              .eq("id", storeId)
+
+            if (error) return { success: false, error: error.message }
+            return { success: true, skin_id, type: "skin" }
+          },
+        }),
+
         complete_setup: tool({
           description:
             "Mark the store as complete and publish it. ONLY call when the merchant explicitly says they are done.",
@@ -947,11 +967,21 @@ export async function POST(req: NextRequest) {
               .eq("store_id", storeId)
               .eq("status", "draft")
 
+            // Default skin to 'yns' if not explicitly set
+            const { data: currentStore } = await supabase
+              .from("stores")
+              .select("skin_id")
+              .eq("id", storeId)
+              .single()
+
+            const skinId = currentStore?.skin_id || "yns"
+
             const { error } = await supabase
               .from("stores")
               .update({
                 onboarding_completed: "completed",
                 status: "active",
+                skin_id: skinId,
                 updated_at: new Date().toISOString(),
                 published_at: new Date().toISOString(),
               })

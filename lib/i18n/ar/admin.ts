@@ -35,6 +35,13 @@ export const admin = {
     allGoodTitle: "كل شيء يسير على ما يرام!",
     allGoodDesc: "لا توجد عناصر تتطلب اهتمامك الآن",
   },
+  domainsPage: {
+    title: "النطاقات",
+    subtitle: "إدارة أسماء النطاقات المخصصة.",
+    addDomain: "إضافة نطاق",
+    noDomains: "لا توجد نطاقات",
+    noDomainsDescription: "قم بربط نطاق مخصص بمتجرك.",
+  },
   dashboardPage: {
     title: "لوحة الإدارة",
     subtitle: "نظرة عامة على المنتجات والمستخدمين واستخدام التجربة.",
