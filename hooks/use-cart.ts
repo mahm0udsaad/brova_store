@@ -13,7 +13,7 @@ export function useCart() {
     setIsLoaded(true)
   }, [])
 
-  const addToCart = useCallback((product: Product, size: string, quantity = 1, customDesign?: CartItem["customDesign"]) => {
+  const addToCart = useCallback((product: Product, size: string = "_default", quantity = 1, customDesign?: CartItem["customDesign"]) => {
     setCart((prev) => {
       // For custom designs, we always add a new item instead of merging
       // For regular products, we merge if same id and size

@@ -213,7 +213,13 @@ export async function ensureOrganizationForOnboarding(): Promise<EnsureOrganizat
         .single()
 
       if (!storeInsertError && insertedStore?.id) {
-        // Ensure store_settings and store_contact rows exist for the new store
+        // Determine subdomain based on environment
+        const isProduction = process.env.NODE_ENV === 'production'
+        const subdomain = isProduction
+          ? `${organizationSlug}.brova.app`
+          : `${organizationSlug}.localhost`
+
+        // Ensure store_settings, store_contact, and store_domains rows exist
         await Promise.all([
           supabase.from('store_settings').upsert(
             {
@@ -231,6 +237,15 @@ export async function ensureOrganizationForOnboarding(): Promise<EnsureOrganizat
               updated_at: new Date().toISOString(),
             } as any,
             { onConflict: 'store_id' }
+          ),
+          supabase.from('store_domains').upsert(
+            {
+              store_id: insertedStore.id,
+              domain: subdomain,
+              status: 'active',
+              is_primary: true,
+            } as any,
+            { onConflict: 'domain' }
           ),
         ])
 

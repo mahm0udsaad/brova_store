@@ -55,6 +55,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   startOfWeek.setHours(0, 0, 0, 0)
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
+  // Core queries — orders and products (these tables always exist)
   const [
     ordersTotal,
     ordersPending,
@@ -66,9 +67,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     productsActive,
     productsDraft,
     productsLowStock,
-    customersTotal,
-    customersNew,
-    wallet,
   ] = await Promise.all([
     supabase.from('orders').select('*', { count: 'exact', head: true }).eq('store_id', storeId),
     supabase.from('orders').select('*', { count: 'exact', head: true }).eq('store_id', storeId).eq('status', 'pending'),
@@ -80,10 +78,12 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     supabase.from('store_products').select('*', { count: 'exact', head: true }).eq('store_id', storeId).eq('status', 'active'),
     supabase.from('store_products').select('*', { count: 'exact', head: true }).eq('store_id', storeId).eq('status', 'draft'),
     supabase.from('store_products').select('*', { count: 'exact', head: true }).eq('store_id', storeId).lte('inventory', 5),
-    supabase.from('customers').select('*', { count: 'exact', head: true }).eq('store_id', storeId),
-    supabase.from('customers').select('*', { count: 'exact', head: true }).eq('store_id', storeId).gte('created_at', startOfMonth.toISOString()),
-    supabase.from('wallet_balances').select('available_balance, pending_balance').eq('store_id', storeId).single(),
   ])
+
+  // Optional queries — these tables may not exist yet; fail gracefully
+  const customersTotal = await supabase.from('customers').select('*', { count: 'exact', head: true }).eq('store_id', storeId).then(r => r, () => ({ count: null } as any))
+  const customersNew = await supabase.from('customers').select('*', { count: 'exact', head: true }).eq('store_id', storeId).gte('created_at', startOfMonth.toISOString()).then(r => r, () => ({ count: null } as any))
+  const wallet = await supabase.from('wallet_balances').select('available_balance, pending_balance').eq('store_id', storeId).single().then(r => r, () => ({ data: null } as any))
 
   const { data: revenueData } = await supabase
     .from('orders')

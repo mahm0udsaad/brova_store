@@ -21,6 +21,7 @@ import {
 import { ThemeRenderer } from '@/lib/theme/renderer'
 import { resolveSkin } from '@/components/storefront/skins'
 import { classicTemplate } from '@/lib/theme/templates'
+import { StorefrontShell } from '@/components/storefront/cart/storefront-shell'
 import type { ComponentNode, ThemeSettings } from '@/types/theme'
 
 interface StorefrontHomeProps {
@@ -77,12 +78,14 @@ export async function StorefrontHome({ locale, orgSlug }: StorefrontHomeProps) {
   nodes = enrichNodes(nodes, products, banners, categories, locale, context.store.name)
 
   return (
-    <ThemeRenderer
-      nodes={nodes}
-      registry={skinRegistry}
-      locale={locale}
-      settings={themeSettings}
-    />
+    <StorefrontShell>
+      <ThemeRenderer
+        nodes={nodes}
+        registry={skinRegistry}
+        locale={locale}
+        settings={themeSettings}
+      />
+    </StorefrontShell>
   )
 }
 

@@ -127,18 +127,15 @@ export const getStorefrontContext = cache(async (
     return null
   }
 
-  // Enforce active status for public access
-  if (store.status !== 'active') {
-    // Allow preview token bypass for draft stores
-    if (options?.previewToken) {
-      const preview = await validatePreviewToken(options.previewToken)
-      if (!preview.valid || preview.storeId !== store.id) {
-        return null
-      }
-    } else {
+  // Validate preview token for draft stores if provided
+  if (store.status !== 'active' && options?.previewToken) {
+    const preview = await validatePreviewToken(options.previewToken)
+    if (!preview.valid || preview.storeId !== store.id) {
       return null
     }
   }
+  // Non-active stores without preview token still return context
+  // so the caller (e.g. storefront-home) can show "Store Unavailable"
 
   // Get store contact
   const { data: contact } = await supabase

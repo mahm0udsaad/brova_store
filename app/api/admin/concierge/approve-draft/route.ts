@@ -38,7 +38,7 @@ interface StoreProductInsert {
   category_ar?: string | null
   image_url?: string | null
   images?: string[]
-  status: "draft"
+  status: "active"
   legacy_product_id: null
   ai_generated: boolean
   ai_confidence?: "high" | "medium" | "low"
@@ -182,6 +182,7 @@ export async function POST(request: NextRequest) {
         .from("store_settings")
         .upsert({
           merchant_id: user.id,
+          store_id: storeId,
           ...updates,
         }, {
           onConflict: "merchant_id",
@@ -241,7 +242,7 @@ export async function POST(request: NextRequest) {
             category_ar: product.category || null,
             image_url: product.image_url || null,
             images: product.image_url ? [product.image_url] : [],
-            status: "draft" as const,
+            status: "active" as const,
             legacy_product_id: null,
             ai_generated: product.confidence === "ai_generated",
             ai_confidence: product.confidence === "ai_generated" ? "medium" : undefined,

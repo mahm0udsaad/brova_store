@@ -273,9 +273,7 @@ export function ConciergeProvider({
     setDraftState((prev) => ({
       ...prev,
       ...updates,
-      products: updates.products
-        ? [...prev.products, ...updates.products]
-        : prev.products,
+      products: updates.products !== undefined ? updates.products : prev.products,
       last_updated: new Date().toISOString(),
       is_dirty: true,
     }))
@@ -293,18 +291,31 @@ export function ConciergeProvider({
     if (!storeId) return false
 
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("stores")
-        .update({
-          status: "active",
-          onboarding_completed: "completed",
-          published_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", storeId)
+      // Step 1: Save the AI-built draft (name, products, appearance) to DB
+      const approveRes = await fetch("/api/admin/concierge/approve-draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ draftState, context: {} }),
+      })
 
-      if (error) throw error
+      if (!approveRes.ok) {
+        const errData = await approveRes.json().catch(() => ({}))
+        console.error("[publishStore] approve-draft failed:", errData)
+        return false
+      }
+
+      // Step 2: Publish the store (set status = active)
+      const publishRes = await fetch("/api/admin/concierge/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ storeId }),
+      })
+
+      if (!publishRes.ok) {
+        const errData = await publishRes.json().catch(() => ({}))
+        console.error("[publishStore] publish failed:", errData)
+        return false
+      }
 
       await completeOnboarding()
       setStoreState("active")
@@ -313,7 +324,7 @@ export function ConciergeProvider({
       console.error("Failed to publish store:", error)
       return false
     }
-  }, [storeId, completeOnboarding])
+  }, [storeId, draftState, completeOnboarding])
 
   // ==========================================================================
   // CONTEXT VALUE

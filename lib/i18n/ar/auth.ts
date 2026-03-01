@@ -14,6 +14,7 @@ export const auth = {
     signingUp: 'جارٍ إنشاء الحساب...',
     haveAccount: 'لديك حساب بالفعل؟',
     loginLink: 'تسجيل الدخول',
+    orEmail: 'أو استخدم البريد الإلكتروني',
 
     // Errors
     errors: {
@@ -43,6 +44,7 @@ export const auth = {
     noAccount: 'ليس لديك حساب؟',
     signupLink: 'إنشاء حساب',
     forgotPassword: 'نسيت كلمة المرور؟',
+    orEmail: 'أو استخدم البريد الإلكتروني',
 
     // Errors
     errors: {

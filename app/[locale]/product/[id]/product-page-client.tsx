@@ -66,7 +66,7 @@ export default function ProductPageClient({ product }: ProductPageClientProps) {
       shorts: tHome("categories.shorts"),
       "t-shirts": tHome("categories.tShirts"),
       accessories: tHome("categories.accessories"),
-    }[product.category] || product.category
+    }[product.category ?? ""] || product.category
 
   const handleSizeSelect = (size: string) => {
     triggerHaptic("light")
@@ -269,7 +269,7 @@ export default function ProductPageClient({ product }: ProductPageClientProps) {
               </div>
               
               <div className="flex gap-3 flex-wrap">
-                {product.sizes.map((size, index) => (
+                {(product.sizes ?? []).map((size, index) => (
                   <motion.button
                     key={size}
                     onClick={() => handleSizeSelect(size)}
@@ -296,7 +296,7 @@ export default function ProductPageClient({ product }: ProductPageClientProps) {
               </div>
               
               <AnimatePresence>
-                {!selectedSize && product.sizes.length > 0 && (
+                {!selectedSize && (product.sizes?.length ?? 0) > 0 && (
                   <motion.p
                     initial={{ opacity: 0, height: 0, marginTop: 0 }}
                     animate={{ opacity: 1, height: "auto", marginTop: 12 }}

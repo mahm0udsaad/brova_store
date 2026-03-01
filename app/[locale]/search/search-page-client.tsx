@@ -26,8 +26,8 @@ export default function SearchPageClient({ products }: SearchPageClientProps) {
     return products.filter(
       (p) =>
         p.name.toLowerCase().includes(lowerQuery) ||
-        p.category.toLowerCase().includes(lowerQuery) ||
-        p.description.toLowerCase().includes(lowerQuery),
+        (p.category ?? "").toLowerCase().includes(lowerQuery) ||
+        (p.description ?? "").toLowerCase().includes(lowerQuery),
     )
   }, [query, products])
 

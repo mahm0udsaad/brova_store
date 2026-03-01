@@ -30,3 +30,8 @@ next-env.d.ts
 
 # Product images (stored in Supabase Storage)
 public/products/
+
+# Playwright
+/playwright-report/
+/test-results/
+/playwright/.auth/

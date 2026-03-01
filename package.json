@@ -9,6 +9,12 @@
     "dev": "next dev",
     "lint": "eslint .",
     "test": "jest",
+    "test:e2e": "playwright test --grep-invert='AI onboarding'",
+    "test:e2e:ai": "playwright test e2e/ai-onboarding.spec.ts",
+    "test:e2e:all": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:report": "playwright show-report",
     "start": "next start",
     "seed:admin": "tsx scripts/seed-admin.ts"
   },
@@ -98,6 +104,7 @@
     "zod": "3.25.76"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4.1.9",
     "@types/jest": "^29.5.14",
     "@types/node": "^22",

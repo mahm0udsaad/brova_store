@@ -14,6 +14,7 @@ export const auth = {
     signingUp: 'Creating account...',
     haveAccount: 'Already have an account?',
     loginLink: 'Log in',
+    orEmail: 'or use email',
 
     // Errors
     errors: {
@@ -43,6 +44,7 @@ export const auth = {
     noAccount: "Don't have an account?",
     signupLink: 'Sign up',
     forgotPassword: 'Forgot password?',
+    orEmail: 'or use email',
 
     // Errors
     errors: {
