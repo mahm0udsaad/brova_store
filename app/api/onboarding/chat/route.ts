@@ -99,6 +99,7 @@ These are the components you can add to a store page using add_page_section:
 - ProductGrid — Grid of product cards (auto-fills from store products)
 - ProductCarousel — Horizontal scrolling product showcase
 - FeaturedCollections — Collection cards with images and descriptions
+- CategoryBrowser — Category grid with optional images
 - Testimonials — Customer reviews/quotes
 - NewsletterSignup — Email subscription form
 - StoreInfo — About the store section
@@ -115,6 +116,33 @@ These are the components you can add to a store page using add_page_section:
 - ALWAYS add TrustBadges with mada + common payment methods
 - Add DeliveryInfo for physical product stores (clothing, electronics, food, home_decor)
 - Add OccasionBanner if there's an upcoming Saudi occasion (Ramadan, Eid, National Day Sept 23, White Friday Nov)
+
+## Component Config Reference (used with update_page_section)
+When the user wants to change content in ANY section, use update_page_section with the section_type.
+Only send the fields you want to change — they are merged with existing config.
+
+- **StoreHeader**: { logoText?, showSearch? (bool), showCart? (bool), sticky? (bool) }
+- **HeroBanner**: { titleOverride?, subtitleOverride?, ctaOverride?, backgroundUrl? (image URL), align?: "start"|"center" }
+- **ProductGrid**: { columns?: 2|3|4, showPrices? (bool) }
+- **ProductCarousel**: (auto-fills from store products)
+- **CategoryBrowser**: { categories?: [{ name, name_ar?, image_url? }], columns?: 2|3|4, layout?: "grid"|"list" }
+- **FeaturedCollections**: { items?: [{ id, titleKey, descriptionKey, imageUrl? }] }
+- **Testimonials**: { items?: [{ id, quoteKey, nameKey, roleKey? }] }
+- **NewsletterSignup**: { titleKey?, subtitleKey?, ctaKey?, placeholderKey? }
+- **StoreInfo**: { aboutKey?, address?, phone?, email? }
+- **StoreFooter**: { showNewsletter? (bool) }
+- **OccasionBanner**: { occasion?, title?, title_ar?, subtitle?, subtitle_ar?, background_color?, image_url?, cta_text?, cta_text_ar?, cta_link? }
+- **WhatsAppButton**: { phone, message?, position?: "bottom-right"|"bottom-left" }
+- **TrustBadges**: { badges?: [{ type: "mada"|"visa"|"mastercard"|"apple_pay"|"tamara"|"tabby"|"cod"|"stc_pay" }] }
+- **DeliveryInfo**: { zones?: [{ city, city_ar, delivery_time, delivery_time_ar, cost }], free_shipping_threshold?, same_day_available? (bool), currency?: "SAR" }
+
+## How to Update Template Content
+1. Call get_store_layout to see ALL current sections (IDs, types, configs)
+2. Use update_page_section with section_type (e.g. "HeroBanner") to change any config field
+3. You can update ANY section by type — no need to memorize IDs
+4. To change hero text: update_page_section({ section_type: "HeroBanner", config: { titleOverride: "New Title" } })
+5. To change category images: use generate_category_images
+6. To change banner image: use generate_section_image then update_page_section with the URL
 `
 
   if (isArabic) {
@@ -181,6 +209,7 @@ These are the components you can add to a store page using add_page_section:
 - أجب بالعربية دائماً
 - إذا رفع التاجر صوراً، حلل محتوى الصور بعناية — لا تخمن
 - عند إضافة منتج بصورة، استخدم رابط الصورة من "روابط الصور:" في حقل image_url — هذا ضروري لعرض الصورة في المعاينة
+- **تعديل أي محتوى في القالب**: إذا طلب التاجر تغيير أي شيء في أي قسم (عنوان البانر، الألوان، الأقسام، الشعار، إلخ)، استخدم get_store_layout أولاً لمعرفة الأقسام الموجودة، ثم استخدم update_page_section مع section_type لتعديل القسم المطلوب
 
 ${componentDocs}
 
@@ -254,6 +283,7 @@ ${componentDocs}
 - Reply in English
 - When images are uploaded, analyze the actual image content carefully — do NOT guess
 - When adding a product with an uploaded image, use the URL from "Image URLs:" in the image_url field — this is essential for displaying the image in the preview
+- **Editing any template content**: When the user asks to change ANYTHING in any section (banner text, colors, categories, logo, etc.), call get_store_layout FIRST to see current sections, then use update_page_section with section_type to update the target section
 
 ${componentDocs}
 
@@ -543,6 +573,44 @@ export async function POST(req: NextRequest) {
         }),
 
         // =====================================================================
+        // TOOL 3b: Get Store Layout
+        // =====================================================================
+        get_store_layout: tool({
+          description:
+            "Get the current store layout — returns all page sections with their IDs, types, positions, and full config. ALWAYS call this BEFORE updating any section so you know the section IDs and current config values.",
+          inputSchema: z.object({}),
+          execute: async () => {
+            const { data: components, error } = await supabase
+              .from("store_components")
+              .select("id, component_type, config, position, status")
+              .eq("store_id", storeId)
+              .eq("status", "active")
+              .order("position", { ascending: true })
+
+            if (error) return { success: false, error: error.message }
+
+            const { data: banners } = await supabase
+              .from("store_banners")
+              .select("id, title, title_ar, subtitle, subtitle_ar, image_url, position, is_active")
+              .eq("store_id", storeId)
+              .eq("is_active", true)
+              .order("sort_order", { ascending: true })
+
+            return {
+              success: true,
+              sections: (components || []).map((c: any) => ({
+                id: c.id,
+                type: c.component_type,
+                position: c.position,
+                config: c.config,
+              })),
+              banners: banners || [],
+              type: "layout",
+            }
+          },
+        }),
+
+        // =====================================================================
         // TOOL 4: Add Page Section
         // =====================================================================
         add_page_section: tool({
@@ -597,19 +665,45 @@ export async function POST(req: NextRequest) {
         // =====================================================================
         remove_page_section: tool({
           description:
-            "Remove a component section from the store page by its ID.",
+            "Remove a component section from the store page. Identify by ID (preferred) or by component type.",
           inputSchema: z.object({
-            section_id: z.string().describe("The component ID to remove"),
+            section_id: z
+              .string()
+              .optional()
+              .describe("The component UUID to remove"),
+            section_type: z
+              .string()
+              .optional()
+              .describe("The component type to remove (e.g. 'OccasionBanner'). Removes the first active section of this type."),
           }),
-          execute: async ({ section_id }) => {
+          execute: async ({ section_id, section_type }) => {
+            let targetId = section_id
+            if (!targetId && section_type) {
+              const { data: found } = await supabase
+                .from("store_components")
+                .select("id")
+                .eq("store_id", storeId)
+                .eq("component_type", section_type)
+                .eq("status", "active")
+                .limit(1)
+                .single()
+              if (!found) {
+                return { success: false, error: `No active ${section_type} section found.` }
+              }
+              targetId = found.id
+            }
+            if (!targetId) {
+              return { success: false, error: "Provide either section_id or section_type." }
+            }
+
             const { error } = await supabase
               .from("store_components")
               .delete()
-              .eq("id", section_id)
+              .eq("id", targetId)
               .eq("store_id", storeId)
 
             if (error) return { success: false, error: error.message }
-            return { success: true, removed_id: section_id, type: "remove_section" }
+            return { success: true, removed_id: targetId, type: "remove_section" }
           },
         }),
 
@@ -618,24 +712,63 @@ export async function POST(req: NextRequest) {
         // =====================================================================
         update_page_section: tool({
           description:
-            "Update the configuration of an existing page section.",
+            "Update the configuration of an existing page section. You can identify the section by its ID (preferred, get it from get_store_layout) or by its component type (e.g. 'HeroBanner'). Config fields are MERGED with existing config — you only need to send the fields you want to change.",
           inputSchema: z.object({
-            section_id: z.string().describe("The component ID to update"),
+            section_id: z
+              .string()
+              .optional()
+              .describe("The component UUID to update (get from get_store_layout)"),
+            section_type: z
+              .string()
+              .optional()
+              .describe("The component type to update (e.g. 'HeroBanner', 'CategoryBrowser'). Used when section_id is not known — finds the first active section of this type."),
             config: z
               .record(z.unknown())
-              .describe("New configuration to merge into existing config"),
+              .describe("Config fields to merge into the existing config. Only include fields you want to change."),
           }),
-          execute: async ({ section_id, config }) => {
+          execute: async ({ section_id, section_type, config }) => {
+            // Resolve the target component
+            let targetId = section_id
+            if (!targetId && section_type) {
+              const { data: found } = await supabase
+                .from("store_components")
+                .select("id")
+                .eq("store_id", storeId)
+                .eq("component_type", section_type)
+                .eq("status", "active")
+                .order("position", { ascending: true })
+                .limit(1)
+                .single()
+              if (!found) {
+                return {
+                  success: false,
+                  error: `No active ${section_type} section found. Add one first with add_page_section.`,
+                }
+              }
+              targetId = found.id
+            }
+
+            if (!targetId) {
+              return {
+                success: false,
+                error: "Provide either section_id or section_type.",
+              }
+            }
+
             // Get current config
             const { data: current } = await supabase
               .from("store_components")
-              .select("config")
-              .eq("id", section_id)
+              .select("config, component_type")
+              .eq("id", targetId)
               .eq("store_id", storeId)
               .single()
 
+            if (!current) {
+              return { success: false, error: "Section not found." }
+            }
+
             const merged = {
-              ...((current?.config as Record<string, unknown>) || {}),
+              ...((current.config as Record<string, unknown>) || {}),
               ...config,
             }
 
@@ -645,11 +778,17 @@ export async function POST(req: NextRequest) {
                 config: merged,
                 updated_at: new Date().toISOString(),
               })
-              .eq("id", section_id)
+              .eq("id", targetId)
               .eq("store_id", storeId)
 
             if (error) return { success: false, error: error.message }
-            return { success: true, section_id, config: merged, type: "update_section" }
+            return {
+              success: true,
+              section_id: targetId,
+              component_type: current.component_type,
+              config: merged,
+              type: "update_section",
+            }
           },
         }),
 

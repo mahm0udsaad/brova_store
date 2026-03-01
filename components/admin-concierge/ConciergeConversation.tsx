@@ -43,6 +43,7 @@ const TOOL_LABELS: Record<string, { en: string; ar: string }> = {
   set_store_logo:   { en: "Saving logo...",          ar: "يحفظ الشعار..." },
   set_store_type:   { en: "Setting store type...",   ar: "يحدد نوع المتجر..." },
   setup_page_layout:{ en: "Setting up layout...",    ar: "يجهز تصميم المتجر..." },
+  get_store_layout: { en: "Reading layout...",       ar: "يقرأ التصميم..." },
   add_page_section: { en: "Adding section...",       ar: "يضيف قسم..." },
   update_page_section:{ en: "Updating section...",   ar: "يحدّث القسم..." },
   remove_page_section:{ en: "Removing section...",   ar: "يحذف القسم..." },
