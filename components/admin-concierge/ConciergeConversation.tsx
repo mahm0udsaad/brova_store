@@ -14,6 +14,7 @@ import {
   X,
   ExternalLink,
   LayoutDashboard,
+  Check,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -34,6 +35,30 @@ interface StagedImage {
   id: string
   file: File
   previewUrl: string // local blob URL for display
+}
+
+// Tool name → bilingual label mapping for the activity indicator
+const TOOL_LABELS: Record<string, { en: string; ar: string }> = {
+  set_store_name:   { en: "Setting store name...",   ar: "يحفظ اسم المتجر..." },
+  set_store_logo:   { en: "Saving logo...",          ar: "يحفظ الشعار..." },
+  set_store_type:   { en: "Setting store type...",   ar: "يحدد نوع المتجر..." },
+  setup_page_layout:{ en: "Setting up layout...",    ar: "يجهز تصميم المتجر..." },
+  add_page_section: { en: "Adding section...",       ar: "يضيف قسم..." },
+  update_page_section:{ en: "Updating section...",   ar: "يحدّث القسم..." },
+  remove_page_section:{ en: "Removing section...",   ar: "يحذف القسم..." },
+  create_store_banner:{ en: "Creating banner...",    ar: "يصمم البانر..." },
+  update_store_theme: { en: "Updating colors...",    ar: "يحدّث الألوان..." },
+  generate_section_image:{ en: "Generating image...", ar: "يصمم صورة..." },
+  generate_category_images:{ en: "Generating category images...", ar: "يصمم صور الأقسام..." },
+  add_product:      { en: "Adding product...",       ar: "يضيف منتج..." },
+  complete_setup:   { en: "Completing setup...",     ar: "ينهي الإعداد..." },
+  set_store_skin:   { en: "Applying design...",      ar: "يطبّق التصميم..." },
+}
+
+function getToolLabel(toolName: string, isRtl: boolean): string {
+  const labels = TOOL_LABELS[toolName]
+  if (labels) return isRtl ? labels.ar : labels.en
+  return isRtl ? "ينفّذ..." : "Working..."
 }
 
 // =============================================================================
@@ -256,12 +281,45 @@ export function ConciergeConversation({
       messages.some((msg) =>
         msg.parts.some(
           (p: any) =>
-            p.type === "tool-complete_setup" &&
-            p.state === "output-available"
+            (p.type === "tool-invocation" && p.toolName === "complete_setup" && p.state === "result") ||
+            // Fallback for older format
+            (p.type === "tool-complete_setup" && p.state === "output-available")
         )
       ),
     [messages]
   )
+
+  // Compute current activity state for the loading indicator
+  const currentActivity = useMemo<{ label: string; key: string } | null>(() => {
+    if (!isStreaming && !isUploading) return null
+    if (isUploading) return { label: isRtl ? "يرفع الصور..." : "Uploading...", key: "upload" }
+
+    // Find the last assistant message
+    const lastAssistantMsg = [...messages].reverse().find(m => m.role === "assistant")
+    if (!lastAssistantMsg) return { label: isRtl ? "يفكر..." : "Thinking...", key: "think" }
+
+    // Check for active tool invocations (state === "call" or "partial-call")
+    const toolParts = (lastAssistantMsg.parts as any[]).filter(
+      p => p.type === "tool-invocation"
+    )
+    const activeTool = toolParts.find(
+      (p: any) => p.state === "call" || p.state === "partial-call"
+    )
+
+    if (activeTool) {
+      const toolName = (activeTool as any).toolName || "unknown"
+      return { label: getToolLabel(toolName, isRtl), key: `tool-${toolName}` }
+    }
+
+    // Has text content being streamed — the cursor handles this, no indicator needed
+    const hasText = lastAssistantMsg.parts.some(
+      (p: any) => p.type === "text" && p.text?.trim()
+    )
+    if (hasText) return null
+
+    // Has completed tools but no text yet — still processing
+    return { label: isRtl ? "يفكر..." : "Thinking...", key: "think" }
+  }, [messages, isStreaming, isUploading, isRtl])
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
@@ -368,21 +426,31 @@ export function ConciergeConversation({
           )
         })}
 
-        {/* Thinking / uploading indicator */}
-        {(isStreaming || isUploading) && lastMessage?.role !== "assistant" && (
-          <div className="flex justify-start">
-            <div className="flex items-center gap-1.5 px-1">
-              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary animate-pulse">
-                <Sparkles className="h-2.5 w-2.5 text-primary-foreground" />
+        {/* Activity indicator — thinking / tool execution / uploading */}
+        <AnimatePresence mode="wait">
+          {currentActivity && (
+            <motion.div
+              key={currentActivity.key}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.2 }}
+              className="flex justify-start"
+            >
+              <div className="flex items-center gap-2 px-2 py-1.5 rounded-xl bg-muted/40">
+                <div className="relative flex h-5 w-5 items-center justify-center">
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/60 to-primary/30 animate-ping opacity-30" />
+                  <div className="relative flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-primary/80 to-primary">
+                    <Sparkles className="h-2.5 w-2.5 text-primary-foreground" />
+                  </div>
+                </div>
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  {currentActivity.label}
+                </span>
               </div>
-              <span className="text-[11px] text-muted-foreground">
-                {isUploading
-                  ? (isRtl ? "يرفع الصور..." : "Uploading...")
-                  : (isRtl ? "يفكر..." : "Thinking...")}
-              </span>
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Completion action buttons */}
         {isSetupComplete && !isStreaming && (

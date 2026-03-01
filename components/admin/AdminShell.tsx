@@ -11,9 +11,10 @@ interface AdminShellProps {
   storeName?: string
   storeStatus?: string
   storeSlug?: string
+  orgSlug?: string
 }
 
-export function AdminShell({ children, storeName, storeStatus = "draft", storeSlug = "" }: AdminShellProps) {
+export function AdminShell({ children, storeName, storeStatus = "draft", storeSlug = "", orgSlug = "" }: AdminShellProps) {
   const { displayMode } = useAdminAssistantDisplayMode() // Only re-renders when displayMode changes, not on message/loading updates
   const isSidePanelOpen = displayMode === "side-panel"
 
@@ -24,7 +25,7 @@ export function AdminShell({ children, storeName, storeStatus = "draft", storeSl
         <main className={cn(
           "flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out",
         )}>
-           <AdminHeader storeStatus={storeStatus} storeSlug={storeSlug} />
+           <AdminHeader storeStatus={storeStatus} storeSlug={storeSlug} orgSlug={orgSlug} />
           <div className="flex-1">
             {children}
           </div>

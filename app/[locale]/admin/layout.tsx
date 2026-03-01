@@ -30,12 +30,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const storeName = context?.store.name
   const storeStatus = context?.store.status || "draft"
   const storeSlug = context?.store.slug || ""
+  const orgSlug = context?.organization.slug || ""
 
   return (
     <div className="theme-admin-ai min-h-screen bg-background font-sans text-foreground selection:bg-primary/30">
       <AdminAuthWrapper>
         <AdminAssistantProvider>
-          <AdminShell storeName={storeName} storeStatus={storeStatus} storeSlug={storeSlug}>
+          <AdminShell storeName={storeName} storeStatus={storeStatus} storeSlug={storeSlug} orgSlug={orgSlug}>
             {children}
           </AdminShell>
         </AdminAssistantProvider>

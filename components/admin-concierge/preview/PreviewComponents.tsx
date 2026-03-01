@@ -394,6 +394,50 @@ export function PreviewCategoryBrowser({ config }: { config: Record<string, unkn
   const isAr = locale === "ar"
   const columns = Math.min((config.columns as number) || 3, 4)
 
+  // Use real categories from config if available
+  const categories = config.categories as Array<{ name: string; name_ar?: string; image_url?: string }> | undefined
+
+  if (categories && categories.length > 0) {
+    return (
+      <div className="px-4 py-3" dir={isAr ? "rtl" : "ltr"}>
+        <p className="text-[10px] font-medium mb-2" style={{ color: "var(--preview-foreground)" }}>
+          {isAr ? "الأقسام" : "Categories"}
+        </p>
+        <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${Math.min(columns, categories.length)}, 1fr)` }}>
+          {categories.slice(0, columns).map((cat, i) => (
+            <div
+              key={i}
+              className="aspect-square rounded-lg overflow-hidden relative flex items-end justify-center"
+              style={{
+                backgroundColor: "var(--preview-muted-bg)",
+                backgroundImage: cat.image_url ? `url(${cat.image_url})` : undefined,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
+            >
+              <div
+                className="w-full py-1.5 text-center"
+                style={{
+                  background: cat.image_url
+                    ? "linear-gradient(transparent, rgba(0,0,0,0.6))"
+                    : "transparent",
+                }}
+              >
+                <span
+                  className="text-[8px] font-semibold"
+                  style={{ color: cat.image_url ? "#fff" : "var(--preview-muted)" }}
+                >
+                  {isAr ? (cat.name_ar || cat.name) : cat.name}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // Fallback: placeholder categories
   const placeholders = isAr
     ? ["ملابس", "إكسسوارات", "أحذية", "حقائب"]
     : ["Clothing", "Accessories", "Shoes", "Bags"]

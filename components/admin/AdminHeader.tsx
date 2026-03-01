@@ -8,7 +8,7 @@ import { useTranslations } from "next-intl"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { UserButton } from "@/components/admin/UserButton"
 
-export const AdminHeader = memo(function AdminHeader({ storeStatus, storeSlug }: { storeStatus: string, storeSlug: string }) {
+export const AdminHeader = memo(function AdminHeader({ storeStatus, storeSlug, orgSlug }: { storeStatus: string, storeSlug: string, orgSlug: string }) {
   const t = useTranslations("admin")
   const [isPublishing, setIsPublishing] = useState(false)
   const [status, setStatus] = useState(storeStatus)
@@ -26,7 +26,19 @@ export const AdminHeader = memo(function AdminHeader({ storeStatus, storeSlug }:
   }
 
   const handlePreview = () => {
-    window.open(`/`, "_blank")
+    if (!orgSlug) {
+      window.open("/", "_blank")
+      return
+    }
+    const hostname = window.location.hostname
+    const isLocal = hostname === "localhost" || hostname === "127.0.0.1"
+    const port = window.location.port ? `:${window.location.port}` : ""
+
+    const storeUrl = isLocal
+      ? `http://${orgSlug}.localhost${port}`
+      : `https://${orgSlug}.brova.app`
+
+    window.open(storeUrl, "_blank")
   }
 
   return (

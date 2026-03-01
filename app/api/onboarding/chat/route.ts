@@ -147,6 +147,13 @@ These are the components you can add to a store page using add_page_section:
 - بعد كل منتج: "تم! عندك منتج ثاني ولا نكمل؟"
 - إذا قال "لا" أو "كذا بس"، انتقل للخطوة التالية
 
+## الخطوة 3.5 — صور الأقسام (اختياري):
+- إذا القالب يحتوي على CategoryBrowser واقترح التاجر أقسام أو طلب صور للأقسام:
+  استخدم generate_category_images مع أسماء الأقسام ووصف مناسب لكل صورة
+  مثال: categories: [{ name: "Clothing", name_ar: "ملابس", image_prompt: "elegant clothing display with modern fashion items, lifestyle photography" }]
+- إذا التاجر قال "صمم بالذكاء الاصطناعي" أو "أضف صور للأقسام": استخدم هذه الأداة فوراً
+- بعد التوليد أخبره: "صممت صور الأقسام! شوف المعاينة"
+
 ## الخطوة 4 — أقسام MENA:
 - أضف WhatsAppButton — اسأل: "وش رقم الواتساب حق متجرك؟"
 - أضف TrustBadges مع (mada, visa, apple_pay, tamara) تلقائياً
@@ -212,6 +219,13 @@ ${componentDocs}
 - **IMPORTANT**: When the user uploads images, their URLs appear in the message after "Image URLs:". Use these URLs in the image_url field when calling add_product
 - After each product: "Done! Want to add another, or move on?"
 - When they say "no" or "that's all", move to the next step
+
+## Step 3.5 — Category Images (optional):
+- If the template has a CategoryBrowser and the user suggested categories or asked for category images:
+  Use generate_category_images with category names and a descriptive image prompt for each
+  Example: categories: [{ name: "Clothing", name_ar: "ملابس", image_prompt: "elegant clothing display with modern fashion items, lifestyle photography" }]
+- If the user says "design with AI" or "add images to categories": use this tool immediately
+- After generating, tell them: "I've designed the category images! Check the preview."
 
 ## Step 4 — MENA Sections:
 - Add WhatsAppButton — ask: "What's your store's WhatsApp number?"
@@ -872,7 +886,96 @@ export async function POST(req: NextRequest) {
         }),
 
         // =====================================================================
-        // TOOL 10: Add Product
+        // TOOL 10: Generate Category Images
+        // =====================================================================
+        generate_category_images: tool({
+          description:
+            "Generate AI images for store categories and update the CategoryBrowser component. Use when the user asks for category images or wants to add images to their categories section.",
+          inputSchema: z.object({
+            categories: z
+              .array(
+                z.object({
+                  name: z.string().describe("Category name in English"),
+                  name_ar: z.string().optional().describe("Category name in Arabic"),
+                  image_prompt: z
+                    .string()
+                    .describe("Prompt to generate a category image (English, descriptive)"),
+                })
+              )
+              .describe("List of categories to generate images for"),
+          }),
+          execute: async ({ categories }) => {
+            // Find the CategoryBrowser component for this store
+            const { data: categoryComponent } = await supabase
+              .from("store_components")
+              .select("id, config")
+              .eq("store_id", storeId)
+              .eq("component_type", "CategoryBrowser")
+              .eq("status", "active")
+              .single()
+
+            if (!categoryComponent) {
+              return {
+                success: false,
+                error: "No CategoryBrowser section found. Add one first with add_page_section.",
+              }
+            }
+
+            // Generate images for each category
+            const results: Array<{
+              name: string
+              name_ar?: string
+              image_url?: string
+            }> = []
+
+            for (const cat of categories) {
+              const imageResult = await generateStoreImage(cat.image_prompt, {
+                storeId,
+                style: "lifestyle",
+                aspect_ratio: "1:1",
+              })
+
+              results.push({
+                name: cat.name,
+                name_ar: cat.name_ar,
+                image_url: "url" in imageResult ? imageResult.url : undefined,
+              })
+            }
+
+            // Update the CategoryBrowser component config with categories
+            const existingConfig =
+              (categoryComponent.config as Record<string, unknown>) || {}
+
+            const updatedConfig = {
+              ...existingConfig,
+              categories: results,
+              columns: Math.min(results.length, 4),
+            }
+
+            const { error: updateError } = await supabase
+              .from("store_components")
+              .update({
+                config: updatedConfig,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", categoryComponent.id)
+
+            if (updateError) {
+              return { success: false, error: updateError.message }
+            }
+
+            return {
+              success: true,
+              categories: results,
+              images_generated: results.filter((r) => r.image_url).length,
+              total: results.length,
+              type: "category_images",
+            }
+          },
+        }),
+
+        // =====================================================================
+        // TOOL 11: Add Product
         // =====================================================================
         add_product: tool({
           description:
